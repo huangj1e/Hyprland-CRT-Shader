@@ -16,5 +16,5 @@ All notable changes to this project will be documented in this file. The format 
 - Temporary `hypr-crt-toggle` command with power-saving state restoration.
 - Arch Linux `PKGBUILD` and pacman package workflow.
 
-[Unreleased]: https://github.com/REPLACE_ME/hyprland-crt-shader/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/REPLACE_ME/hyprland-crt-shader/releases/tag/v1.0.0
+[Unreleased]: https://github.com/huangj1e/Hyprland-CRT-Shader/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/huangj1e/Hyprland-CRT-Shader/releases/tag/v1.0.0

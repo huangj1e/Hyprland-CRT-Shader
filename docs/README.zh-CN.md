@@ -40,7 +40,7 @@ sudo pacman -S --needed base-devel git
 克隆并以普通用户构建 pacman 软件包：
 
 ```bash
-git clone https://github.com/REPLACE_ME/hyprland-crt-shader.git
+git clone https://github.com/huangj1e/Hyprland-CRT-Shader.git
 cd hyprland-crt-shader
 make check
 make package
@@ -61,7 +61,7 @@ sudo pacman -U ./hyprland-crt-shader-1.0.0-1-any.pkg.tar.zst
 yay -S hyprland-crt-shader
 ```
 
-注意：仓库中的 `REPLACE_ME` 必须由项目发布者替换成实际 GitHub 用户名，并发布 Git 仓库、提交 AUR 后，其他人才可以使用上面的 AUR 命令。
+注意：项目仍需由维护者提交到 AUR，其他用户才能使用上面的 AUR 安装命令。
 
 ## 启用
 

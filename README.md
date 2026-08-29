@@ -47,7 +47,7 @@ sudo pacman -S --needed base-devel git
 Clone this repository and build the package as a regular user:
 
 ```bash
-git clone https://github.com/REPLACE_ME/hyprland-crt-shader.git
+git clone https://github.com/huangj1e/Hyprland-CRT-Shader.git
 cd hyprland-crt-shader
 make check
 make package
@@ -72,7 +72,7 @@ After publishing the PKGBUILD to the AUR, users can install it using an AUR help
 yay -S hyprland-crt-shader
 ```
 
-This repository contains both `PKGBUILD` and `.SRCINFO`, but the project owner must replace `REPLACE_ME`, publish the Git repository, and submit it to the AUR before the command above becomes available publicly.
+This repository contains both `PKGBUILD` and `.SRCINFO`. The project still needs to be submitted to the AUR before the command above becomes available publicly.
 
 ## Enable the shader
 
