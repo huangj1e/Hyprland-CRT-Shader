@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Toggle the packaged Hyprland CRT screen shader without editing the config.
+
+set -u
+
+readonly SHADER="/usr/share/hyprland-crt-shader/crt.frag"
+
+fail() {
+    printf 'hypr-crt-toggle: %s\n' "$*" >&2
+    exit 1
+}
+
+command -v hyprctl >/dev/null 2>&1 || fail "hyprctl was not found"
+[[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] || fail "not running inside a Hyprland session"
+
+current="$(hyprctl getoption decoration:screen_shader 2>/dev/null)" || fail "cannot connect to Hyprland"
+
+if grep -Fq "$SHADER" <<<"$current"; then
+    # Restore power-saving behavior while the animated shader is disabled.
+    hyprctl eval 'hl.config({ decoration = { screen_shader = "" }, debug = { damage_tracking = 1, vfr = true } })' >/dev/null \
+        || fail "could not disable the shader"
+    echo "CRT Shader: OFF (temporary)"
+    hyprctl notify 2 2500 'rgb(88cc88)' 'CRT Shader: OFF' >/dev/null 2>&1 || true
+else
+    [[ -r "$SHADER" ]] || fail "shader is missing: $SHADER"
+
+    # Animated uniforms require continuous frames and complete output damage.
+    hyprctl eval 'hl.config({ decoration = { screen_shader = "/usr/share/hyprland-crt-shader/crt.frag" }, debug = { damage_tracking = 0, vfr = false } })' >/dev/null \
+        || fail "could not enable the shader"
+    echo "CRT Shader: ON (temporary)"
+    hyprctl notify 2 2500 'rgb(88aaff)' 'CRT Shader: ON' >/dev/null 2>&1 || true
+fi

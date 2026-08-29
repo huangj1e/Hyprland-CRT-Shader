@@ -1,0 +1,3 @@
+* text=auto eol=lf
+*.frag linguist-language=GLSL
+*.pkg.tar.* binary

@@ -1,0 +1,38 @@
+name: Bug report
+description: Report a shader, compatibility, or packaging problem
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: Problem
+      description: Describe what happened and what you expected.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Hyprland version
+      placeholder: "0.56.2 / commit hash"
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: GPU and driver
+      placeholder: "Intel HD 520, Mesa 26.2.1"
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Output configuration
+      placeholder: "2560x1440@144, scale 1.25"
+  - type: textarea
+    attributes:
+      label: Logs
+      description: Include hyprctl configerrors and relevant shader errors.
+      render: text
+  - type: checkboxes
+    attributes:
+      label: Checklist
+      options:
+        - label: The issue disappears when the shader is disabled.
+        - label: I tested the latest project version.

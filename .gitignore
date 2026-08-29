@@ -1,0 +1,18 @@
+# Arch/makepkg output
+*.pkg.tar.*
+*.pkg.tar.*.sig
+*.src.tar.*
+pkg/
+src/
+
+# Project build output
+/build/
+/dist/
+
+# Logs and editor files
+*.log
+*.swp
+*~
+.DS_Store
+.idea/
+.vscode/

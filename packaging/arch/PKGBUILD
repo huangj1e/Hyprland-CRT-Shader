@@ -1,0 +1,33 @@
+# Maintainer: Hyprland CRT Shader contributors
+pkgname=hyprland-crt-shader
+pkgver=1.0.0
+pkgrel=1
+pkgdesc='Animated CRT, analog TV and restrained glitch screen shader for Hyprland'
+arch=('any')
+url='https://github.com/REPLACE_ME/hyprland-crt-shader'
+license=('MIT')
+depends=('hyprland' 'bash')
+optdepends=('glslang: validate the GLSL shader locally')
+source=('crt.frag'
+        'hypr-crt-toggle'
+        'hyprland-crt-shader.lua'
+        'hyprland-crt-shader.conf'
+        'LICENSE')
+sha256sums=('0831dd148cf9c84602962d6d83adc26e6646c929891e179953797ad676095f1d'
+            '713488997d918b74e16771adec6b921f6b1a8aac2fe21f88051976ccb522a538'
+            'ca679bf029d9271cad0cfddaa2e62db10a4b653ef686084100756624a836f043'
+            '548658ee5e8bbed188eda5b0778544747119564fec1fed0b35efcf8e4e7c430d'
+            'addb479a192bfb836e6925d56eec17e7e0a55b14dc4b9164dcc6418e94370bc8')
+
+package() {
+    install -Dm644 "$srcdir/crt.frag" \
+        "$pkgdir/usr/share/hyprland-crt-shader/crt.frag"
+    install -Dm755 "$srcdir/hypr-crt-toggle" \
+        "$pkgdir/usr/bin/hypr-crt-toggle"
+    install -Dm644 "$srcdir/hyprland-crt-shader.lua" \
+        "$pkgdir/usr/share/hyprland-crt-shader/hyprland-crt-shader.lua"
+    install -Dm644 "$srcdir/hyprland-crt-shader.conf" \
+        "$pkgdir/usr/share/hyprland-crt-shader/hyprland-crt-shader.conf"
+    install -Dm644 "$srcdir/LICENSE" \
+        "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
