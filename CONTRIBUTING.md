@@ -7,7 +7,7 @@ Thanks for helping improve Hyprland CRT Shader.
 Required for full validation on Arch Linux:
 
 ```bash
-sudo pacman -S --needed git base-devel glslang
+sudo pacman -S --needed git base-devel glslang python tk
 ```
 
 Run checks before submitting a change:

@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Added
+
+- Live Tk control panel for tuning shader parameters with debounced Hyprland recompilation.
+- Persistent per-user shader copy so pacman-managed files remain untouched.
+
 ## [1.0.0] - 2026-08-29
 
 ### Added

@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install validators
-        run: sudo apt-get update && sudo apt-get install -y glslang-tools
+        run: sudo apt-get update && sudo apt-get install -y glslang-tools python3-tk
       - name: Validate shader and scripts
         run: make check
 
@@ -22,7 +22,7 @@ jobs:
     container: archlinux:base-devel
     steps:
       - name: Install dependencies
-        run: pacman -Syu --noconfirm git glslang
+        run: pacman -Syu --noconfirm git glslang python tk
       - uses: actions/checkout@v4
       - name: Validate
         run: make check

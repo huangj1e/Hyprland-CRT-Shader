@@ -1,0 +1,287 @@
+#!/usr/bin/env python3
+"""Live control panel for Hyprland CRT Shader.
+
+The Hyprland screen-shader API does not expose arbitrary user uniforms. This
+panel therefore maintains a per-user shader copy, edits its constants, and asks
+Hyprland to recompile it after a short debounce. No application/window content
+is modified.
+"""
+
+from __future__ import annotations
+
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+try:
+    import tkinter as tk
+    from tkinter import messagebox, ttk
+except ImportError as exc:
+    print("hypr-crt-control: Tk is unavailable; install the 'tk' package", file=sys.stderr)
+    raise SystemExit(1) from exc
+
+APP = "hyprland-crt-shader"
+SYSTEM_SHADERS = (
+    Path("/usr/share/hyprland-crt-shader/crt.frag"),
+    Path("/usr/local/share/hyprland-crt-shader/crt.frag"),
+)
+DEVELOPMENT_SHADER = Path(__file__).resolve().parent.parent / "shaders" / "crt.frag"
+CONFIG_HOME = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+USER_DIR = CONFIG_HOME / APP
+USER_SHADER = USER_DIR / "crt.frag"
+
+# key: (English label, Chinese hint, minimum, maximum, slider resolution)
+CONTROLS = {
+    "Signal glitch": {
+        "GLITCH_INTERVAL": ("Interval", "故障周期（秒）", 1.0, 120.0, 0.5),
+        "GLITCH_DURATION": ("Duration", "强故障持续时间", 0.05, 3.0, 0.05),
+        "GLITCH_POWER": ("Power", "周期性故障强度", 0.0, 1.5, 0.01),
+        "BASE_GLITCH": ("Base instability", "常态信号不稳", 0.0, 0.6, 0.01),
+    },
+    "Shake and waves": {
+        "SHAKE_BASE_PIXELS": ("Idle shake", "常态抖动像素", 0.0, 4.0, 0.05),
+        "SHAKE_GLITCH_PIXELS": ("Glitch shake", "故障抖动像素", 0.0, 20.0, 0.1),
+        "WAVE_BASE_PIXELS": ("Idle wave", "常态水平波纹", 0.0, 5.0, 0.05),
+        "WAVE_GLITCH_PIXELS": ("Glitch wave", "故障水平波纹", 0.0, 30.0, 0.1),
+    },
+    "Rolling sync tear": {
+        "ROLLING_TEAR_STRENGTH": ("Strength", "滚动撕裂强度", 0.0, 2.0, 0.01),
+        "ROLLING_TEAR_WIDTH": ("Width", "撕裂带高度比例", 0.005, 0.30, 0.005),
+        "ROLLING_TEAR_SPEED": ("Speed", "向下滚动速度", 0.0, 2.0, 0.01),
+        "ROLLING_TEAR_PIXELS": ("Displacement", "撕裂水平错位像素", 0.0, 50.0, 0.25),
+    },
+    "RGB and noise": {
+        "RGB_SHIFT_BASE_PIXELS": ("Idle RGB shift", "常态 RGB 分离", 0.0, 8.0, 0.05),
+        "RGB_SHIFT_GLITCH": ("Glitch RGB shift", "故障 RGB 分离", 0.0, 40.0, 0.25),
+        "BLOCK_NOISE_STRENGTH": ("Block noise", "块状噪声强度", 0.0, 1.0, 0.01),
+        "WHITE_NOISE_STRENGTH": ("White noise", "白噪点强度", 0.0, 0.30, 0.005),
+        "HORIZONTAL_LINE": ("Horizontal noise", "高频水平暗纹", 0.0, 0.30, 0.005),
+    },
+    "CRT display": {
+        "CURVATURE": ("Curvature", "屏幕曲率", 0.0, 0.20, 0.005),
+        "SCANLINE_STRENGTH": ("Scanlines", "扫描线强度", 0.0, 0.40, 0.005),
+        "RGB_MASK_STRENGTH": ("Phosphor mask", "RGB 荧光粉强度", 0.0, 0.30, 0.005),
+        "VIGNETTE_STRENGTH": ("Vignette", "暗角强度", 0.0, 0.70, 0.01),
+        "FLICKER_STRENGTH": ("Flicker", "亮度闪烁", 0.0, 0.08, 0.001),
+        "OVERSCAN": ("Overscan", "正数裁边，负数缩小", -0.10, 0.10, 0.002),
+    },
+}
+
+CONST_RE = re.compile(r"(const\s+float\s+({key})\s*=\s*)([-+]?(?:\d+(?:\.\d*)?|\.\d+))(\s*;)")
+
+
+def run_hyprctl(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["hyprctl", *args], check=check, text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+    )
+
+
+def source_shader() -> Path:
+    for shader in SYSTEM_SHADERS:
+        if shader.is_file():
+            return shader
+    if DEVELOPMENT_SHADER.is_file():
+        return DEVELOPMENT_SHADER
+    raise FileNotFoundError("crt.frag was not found")
+
+
+def ensure_user_shader() -> None:
+    USER_DIR.mkdir(parents=True, exist_ok=True)
+    if not USER_SHADER.exists():
+        shutil.copy2(source_shader(), USER_SHADER)
+
+
+def read_values(text: str) -> dict[str, float]:
+    values: dict[str, float] = {}
+    for group in CONTROLS.values():
+        for key in group:
+            match = re.search(CONST_RE.pattern.format(key=re.escape(key)), text)
+            if not match:
+                raise ValueError(f"Shader parameter not found: {key}")
+            values[key] = float(match.group(3))
+    return values
+
+
+def replace_value(text: str, key: str, value: float) -> str:
+    pattern = re.compile(CONST_RE.pattern.format(key=re.escape(key)))
+    replacement = lambda m: f"{m.group(1)}{value:.6f}{m.group(4)}"
+    result, count = pattern.subn(replacement, text, count=1)
+    if count != 1:
+        raise ValueError(f"Could not update shader parameter: {key}")
+    return result
+
+
+def atomic_write(path: Path, text: str) -> None:
+    fd, temporary = tempfile.mkstemp(prefix=".crt.", suffix=".frag", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            stream.write(text)
+        os.chmod(temporary, 0o644)
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+class ControlPanel(tk.Tk):
+    def __init__(self) -> None:
+        super().__init__()
+        self.title("Hyprland CRT Shader Control")
+        self.geometry("760x720")
+        self.minsize(680, 520)
+        self.pending: str | None = None
+        self.enabled = tk.BooleanVar(value=True)
+        self.live = tk.BooleanVar(value=True)
+        self.status = tk.StringVar(value="Ready")
+        self.variables: dict[str, tk.DoubleVar] = {}
+        self.defaults = read_values(source_shader().read_text(encoding="utf-8"))
+        ensure_user_shader()
+        self.load_values()
+        self.build_ui()
+        self.detect_enabled()
+
+    def load_values(self) -> None:
+        values = read_values(USER_SHADER.read_text(encoding="utf-8"))
+        self.variables = {key: tk.DoubleVar(value=value) for key, value in values.items()}
+
+    def build_ui(self) -> None:
+        header = ttk.Frame(self, padding=12)
+        header.pack(fill="x")
+        ttk.Label(header, text="CRT Shader Control Panel", font=("Sans", 17, "bold")).pack(side="left")
+        ttk.Checkbutton(header, text="Live preview", variable=self.live).pack(side="right", padx=(12, 0))
+        ttk.Checkbutton(header, text="Effect enabled", variable=self.enabled, command=self.toggle).pack(side="right")
+
+        ttk.Label(
+            self,
+            text="Sliders update a per-user shader copy and recompile it after 180 ms.  参数实时生效。",
+            padding=(12, 0, 12, 8),
+        ).pack(fill="x")
+
+        outer = ttk.Frame(self)
+        outer.pack(fill="both", expand=True)
+        canvas = tk.Canvas(outer, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(outer, orient="vertical", command=canvas.yview)
+        body = ttk.Frame(canvas, padding=(12, 0, 12, 12))
+        body.bind("<Configure>", lambda _e: canvas.configure(scrollregion=canvas.bbox("all")))
+        window = canvas.create_window((0, 0), window=body, anchor="nw")
+        canvas.bind("<Configure>", lambda e: canvas.itemconfigure(window, width=e.width))
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        for title, controls in CONTROLS.items():
+            frame = ttk.LabelFrame(body, text=title, padding=8)
+            frame.pack(fill="x", pady=5)
+            frame.columnconfigure(1, weight=1)
+            for row, (key, (label, hint, low, high, step)) in enumerate(controls.items()):
+                ttk.Label(frame, text=f"{label}\n{hint}", width=22).grid(row=row, column=0, sticky="w", padx=(0, 8))
+                scale = ttk.Scale(
+                    frame, from_=low, to=high, variable=self.variables[key],
+                    command=lambda _value, k=key, s=step: self.changed(k, s),
+                )
+                scale.grid(row=row, column=1, sticky="ew", padx=4)
+                value_label = ttk.Label(frame, width=9, anchor="e")
+                value_label.grid(row=row, column=2, sticky="e")
+                self.variables[key].trace_add(
+                    "write", lambda *_args, k=key, l=value_label: l.configure(text=f"{self.variables[k].get():.3f}")
+                )
+                value_label.configure(text=f"{self.variables[key].get():.3f}")
+
+        footer = ttk.Frame(self, padding=12)
+        footer.pack(fill="x")
+        ttk.Button(footer, text="Apply now", command=self.apply).pack(side="left")
+        ttk.Button(footer, text="Reset defaults", command=self.reset_defaults).pack(side="left", padx=8)
+        ttk.Button(footer, text="Open shader folder", command=self.open_folder).pack(side="left")
+        ttk.Label(footer, textvariable=self.status).pack(side="right")
+
+    def changed(self, key: str, step: float) -> None:
+        # Snap to the documented step while retaining a smooth native slider.
+        value = self.variables[key].get()
+        snapped = round(value / step) * step
+        if abs(snapped - value) > step / 100.0:
+            self.variables[key].set(snapped)
+        if self.live.get():
+            if self.pending:
+                self.after_cancel(self.pending)
+            self.pending = self.after(180, self.apply)
+
+    def write_controls(self) -> None:
+        text = USER_SHADER.read_text(encoding="utf-8")
+        for key, variable in self.variables.items():
+            text = replace_value(text, key, variable.get())
+        atomic_write(USER_SHADER, text)
+
+    def apply(self) -> None:
+        self.pending = None
+        try:
+            self.write_controls()
+            if self.enabled.get():
+                # Setting an empty path first guarantees recompilation even when
+                # the configured path itself did not change.
+                run_hyprctl("eval", 'hl.config({ decoration = { screen_shader = "" } })')
+                code = (
+                    'hl.config({ decoration = { screen_shader = "'
+                    + str(USER_SHADER)
+                    + '" }, debug = { damage_tracking = 0, vfr = false } })'
+                )
+                run_hyprctl("eval", code)
+            self.status.set("Applied / 已应用")
+        except Exception as exc:
+            self.status.set("Apply failed")
+            messagebox.showerror("CRT Shader", str(exc))
+
+    def toggle(self) -> None:
+        try:
+            if self.enabled.get():
+                self.apply()
+            else:
+                run_hyprctl(
+                    "eval",
+                    'hl.config({ decoration = { screen_shader = "" }, debug = { damage_tracking = 1, vfr = true } })',
+                )
+                self.status.set("Disabled / 已关闭")
+        except Exception as exc:
+            messagebox.showerror("CRT Shader", str(exc))
+
+    def detect_enabled(self) -> None:
+        try:
+            output = run_hyprctl("getoption", "decoration:screen_shader").stdout
+            self.enabled.set("crt.frag" in output and "str: " in output)
+        except Exception:
+            self.enabled.set(False)
+            self.status.set("Cannot connect to Hyprland")
+
+    def reset_defaults(self) -> None:
+        if not messagebox.askyesno("Reset", "Reset all controls to packaged defaults?\n恢复全部默认参数？"):
+            return
+        for key, value in self.defaults.items():
+            self.variables[key].set(value)
+        self.apply()
+
+    def open_folder(self) -> None:
+        try:
+            subprocess.Popen(["xdg-open", str(USER_DIR)])
+        except OSError as exc:
+            messagebox.showerror("CRT Shader", str(exc))
+
+
+def main() -> int:
+    if "HYPRLAND_INSTANCE_SIGNATURE" not in os.environ:
+        print("hypr-crt-control: run this command inside a Hyprland session", file=sys.stderr)
+        return 1
+    try:
+        app = ControlPanel()
+        app.mainloop()
+        return 0
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"hypr-crt-control: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

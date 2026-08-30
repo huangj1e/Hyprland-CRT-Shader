@@ -22,6 +22,7 @@ cp "$root/packaging/arch/PKGBUILD" "$build_dir/PKGBUILD"
 cp "$root/LICENSE" "$build_dir/LICENSE"
 cp "$root/shaders/crt.frag" "$build_dir/crt.frag"
 cp "$root/bin/hypr-crt-toggle" "$build_dir/hypr-crt-toggle"
+cp "$root/bin/hypr-crt-control" "$build_dir/hypr-crt-control"
 cp "$root/config/hyprland-crt-shader.lua" "$build_dir/hyprland-crt-shader.lua"
 cp "$root/config/hyprland-crt-shader.conf" "$build_dir/hyprland-crt-shader.conf"
 

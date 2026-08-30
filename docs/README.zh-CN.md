@@ -103,6 +103,26 @@ hyprctl configerrors
 hyprctl getoption decoration:screen_shader
 ```
 
+## 实时图形控制面板
+
+在 Hyprland 终端中运行：
+
+```bash
+hypr-crt-control
+```
+
+控制面板提供分组滑块，可以实时调节故障周期、抖动、水平波浪、滚动撕裂、RGB 分离、噪声、曲率、扫描线、暗角、闪烁和 Overscan。拖动后经过约 180 毫秒防抖即重新加载效果。
+
+Hyprland Screen Shader 当前不能直接接收任意用户 uniform，因此面板会创建并编辑用户副本：
+
+```text
+~/.config/hyprland-crt-shader/crt.frag
+```
+
+面板临时让 Hyprland 使用该文件并重新编译 Shader，不会修改 `/usr/share` 中由 pacman 管理的原始文件。参数会保存在用户副本中，下次打开面板时继续使用。
+
+图形界面依赖 Python 和 Tk；Arch 软件包会自动安装这些依赖。
+
 ## 临时开关
 
 安装后可以在 Hyprland 终端中直接执行：

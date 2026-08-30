@@ -12,6 +12,8 @@ all: check
 
 check:
 	bash -n bin/hypr-crt-toggle
+	python -m py_compile bin/hypr-crt-control
+	rm -rf bin/__pycache__
 	@if command -v glslangValidator >/dev/null 2>&1; then \
 		glslangValidator -S frag shaders/crt.frag; \
 	else \
@@ -21,12 +23,13 @@ check:
 install:
 	install -Dm644 shaders/crt.frag "$(SHAREDIR)/crt.frag"
 	install -Dm755 bin/hypr-crt-toggle "$(BINDIR)/hypr-crt-toggle"
+	install -Dm755 bin/hypr-crt-control "$(BINDIR)/hypr-crt-control"
 	install -Dm644 config/hyprland-crt-shader.lua "$(SHAREDIR)/hyprland-crt-shader.lua"
 	install -Dm644 config/hyprland-crt-shader.conf "$(SHAREDIR)/hyprland-crt-shader.conf"
 	install -Dm644 LICENSE "$(LICENSEDIR)/LICENSE"
 
 uninstall:
-	rm -f "$(BINDIR)/hypr-crt-toggle"
+	rm -f "$(BINDIR)/hypr-crt-toggle" "$(BINDIR)/hypr-crt-control"
 	rm -rf "$(SHAREDIR)" "$(LICENSEDIR)"
 
 package:

@@ -127,6 +127,26 @@ hyprctl configerrors
 hyprctl getoption decoration:screen_shader
 ```
 
+## Live control panel
+
+Launch the graphical editor from a terminal inside Hyprland:
+
+```bash
+hypr-crt-control
+```
+
+The panel provides grouped sliders for glitch timing, screen shake, waves, rolling tears, RGB separation, noise, curvature, scanlines, vignette, flicker, and overscan. Changes are applied after a short debounce, so the effect updates while a slider is moved.
+
+Hyprland does not currently expose arbitrary custom uniforms to screen shaders. The panel therefore creates and edits:
+
+```text
+~/.config/hyprland-crt-shader/crt.frag
+```
+
+It then temporarily points Hyprland at this per-user copy and recompiles it. The packaged shader under `/usr/share` remains unchanged. Slider values persist in the user copy between panel sessions.
+
+The GUI requires Python and Tk. They are installed automatically by the Arch package dependencies.
+
 ## Temporary toggle
 
 Run from a terminal inside the Hyprland session:
