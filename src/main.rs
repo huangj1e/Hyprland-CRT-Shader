@@ -22,7 +22,6 @@ const SYSTEM_SHADERS: &[&str] = &[
 struct Parameter {
     key: &'static str,
     labels: [&'static str; 4],
-    hints: [&'static str; 4],
     min: f32,
     max: f32,
     step: f32,
@@ -93,7 +92,6 @@ const PARAMETERS: &[Parameter] = &[
     Parameter {
         key: "GLITCH_INTERVAL",
         labels: ["故障周期", "Glitch interval", "グリッチ間隔", "글리치 간격"],
-        hints: ["故障周期", "Glitch interval", "間隔", "간격"],
         min: 1.0,
         max: 120.0,
         step: 0.5,
@@ -107,7 +105,6 @@ const PARAMETERS: &[Parameter] = &[
             "グリッチ持続時間",
             "글리치 지속 시간",
         ],
-        hints: ["持续时间", "Duration", "持続時間", "지속 시간"],
         min: 0.05,
         max: 3.0,
         step: 0.05,
@@ -121,7 +118,6 @@ const PARAMETERS: &[Parameter] = &[
             "グリッチ強度",
             "글리치 강도",
         ],
-        hints: ["故障强度", "Power", "強度", "강도"],
         min: 0.0,
         max: 1.5,
         step: 0.01,
@@ -135,7 +131,6 @@ const PARAMETERS: &[Parameter] = &[
             "基本信号の不安定さ",
             "기본 신호 불안정",
         ],
-        hints: ["常态不稳", "Base instability", "基本不安定", "기본 불안정"],
         min: 0.0,
         max: 0.6,
         step: 0.01,
@@ -149,7 +144,6 @@ const PARAMETERS: &[Parameter] = &[
             "常態シェイク",
             "평상시 흔들림",
         ],
-        hints: ["常态抖动", "Idle shake", "常態シェイク", "평상시 흔들림"],
         min: 0.0,
         max: 4.0,
         step: 0.05,
@@ -163,7 +157,6 @@ const PARAMETERS: &[Parameter] = &[
             "グリッチシェイク",
             "글리치 흔들림",
         ],
-        hints: ["故障抖动", "Glitch shake", "グリッチ", "글리치"],
         min: 0.0,
         max: 20.0,
         step: 0.1,
@@ -172,7 +165,6 @@ const PARAMETERS: &[Parameter] = &[
     Parameter {
         key: "WAVE_BASE_PIXELS",
         labels: ["常态水平波纹", "Idle wave", "常態波形", "평상시 파동"],
-        hints: ["常态波纹", "Idle wave", "常態波形", "평상시 파동"],
         min: 0.0,
         max: 5.0,
         step: 0.05,
@@ -181,7 +173,6 @@ const PARAMETERS: &[Parameter] = &[
     Parameter {
         key: "WAVE_GLITCH_PIXELS",
         labels: ["故障水平波纹", "Glitch wave", "グリッチ波形", "글리치 파동"],
-        hints: ["故障波纹", "Glitch wave", "グリッチ", "글리치"],
         min: 0.0,
         max: 30.0,
         step: 0.1,
@@ -195,7 +186,6 @@ const PARAMETERS: &[Parameter] = &[
             "ローリング強度",
             "롤링 찢김 강도",
         ],
-        hints: ["撕裂强度", "Strength", "強度", "강도"],
         min: 0.0,
         max: 2.0,
         step: 0.01,
@@ -204,7 +194,6 @@ const PARAMETERS: &[Parameter] = &[
     Parameter {
         key: "ROLLING_TEAR_WIDTH",
         labels: ["撕裂带高度比例", "Tear band width", "ティア幅", "찢김 폭"],
-        hints: ["高度比例", "Width", "幅", "폭"],
         min: 0.005,
         max: 0.30,
         step: 0.005,
@@ -218,7 +207,6 @@ const PARAMETERS: &[Parameter] = &[
             "スクロール速度",
             "롤링 속도",
         ],
-        hints: ["滚动速度", "Speed", "速度", "속도"],
         min: 0.0,
         max: 2.0,
         step: 0.01,
@@ -227,7 +215,6 @@ const PARAMETERS: &[Parameter] = &[
     Parameter {
         key: "ROLLING_TEAR_PIXELS",
         labels: ["撕裂水平错位", "Tear displacement", "水平ずれ", "수평 변위"],
-        hints: ["水平错位", "Displacement", "ずれ", "변위"],
         min: 0.0,
         max: 50.0,
         step: 0.25,
@@ -241,7 +228,6 @@ const PARAMETERS: &[Parameter] = &[
             "常態RGBずれ",
             "평상시 RGB 분리",
         ],
-        hints: ["常态分离", "Idle RGB shift", "常態RGB", "평상시 RGB"],
         min: 0.0,
         max: 8.0,
         step: 0.05,
@@ -255,7 +241,6 @@ const PARAMETERS: &[Parameter] = &[
             "グリッチRGBずれ",
             "글리치 RGB 분리",
         ],
-        hints: ["故障分离", "Glitch RGB shift", "グリッチRGB", "글리치 RGB"],
         min: 0.0,
         max: 40.0,
         step: 0.25,
@@ -269,7 +254,6 @@ const PARAMETERS: &[Parameter] = &[
             "ブロックノイズ",
             "블록 노이즈",
         ],
-        hints: ["块噪声", "Block noise", "ブロック", "블록"],
         min: 0.0,
         max: 1.0,
         step: 0.01,
@@ -283,7 +267,6 @@ const PARAMETERS: &[Parameter] = &[
             "ホワイトノイズ",
             "화이트 노이즈",
         ],
-        hints: ["白噪点", "White noise", "白ノイズ", "화이트"],
         min: 0.0,
         max: 0.30,
         step: 0.005,
@@ -297,7 +280,6 @@ const PARAMETERS: &[Parameter] = &[
             "水平ノイズ",
             "수평 노이즈",
         ],
-        hints: ["水平暗纹", "Horizontal noise", "水平ノイズ", "수평"],
         min: 0.0,
         max: 0.30,
         step: 0.005,
@@ -306,7 +288,6 @@ const PARAMETERS: &[Parameter] = &[
     Parameter {
         key: "CURVATURE",
         labels: ["屏幕曲率", "Curvature", "曲率", "곡률"],
-        hints: ["曲率", "Curvature", "曲率", "곡률"],
         min: 0.0,
         max: 0.20,
         step: 0.005,
@@ -315,7 +296,6 @@ const PARAMETERS: &[Parameter] = &[
     Parameter {
         key: "SCANLINE_STRENGTH",
         labels: ["扫描线强度", "Scanline strength", "走査線", "스캔라인"],
-        hints: ["扫描线", "Scanlines", "走査線", "스캔라인"],
         min: 0.0,
         max: 0.40,
         step: 0.005,
@@ -329,7 +309,6 @@ const PARAMETERS: &[Parameter] = &[
             "RGBマスク",
             "RGB 인광 마스크",
         ],
-        hints: ["荧光粉", "Phosphor mask", "RGBマスク", "인광 마스크"],
         min: 0.0,
         max: 0.30,
         step: 0.005,
@@ -338,7 +317,6 @@ const PARAMETERS: &[Parameter] = &[
     Parameter {
         key: "VIGNETTE_STRENGTH",
         labels: ["暗角强度", "Vignette", "ビネット", "비네트"],
-        hints: ["暗角", "Vignette", "ビネット", "비네트"],
         min: 0.0,
         max: 0.70,
         step: 0.01,
@@ -347,7 +325,6 @@ const PARAMETERS: &[Parameter] = &[
     Parameter {
         key: "FLICKER_STRENGTH",
         labels: ["亮度闪烁", "Flicker", "ちらつき", "플리커"],
-        hints: ["闪烁", "Flicker", "ちらつき", "플리커"],
         min: 0.0,
         max: 0.08,
         step: 0.001,
@@ -356,7 +333,6 @@ const PARAMETERS: &[Parameter] = &[
     Parameter {
         key: "OVERSCAN",
         labels: ["画面裁边/缩小", "Overscan", "オーバースキャン", "오버스캔"],
-        hints: ["裁边/缩小", "Overscan", "オーバースキャン", "오버스캔"],
         min: -0.10,
         max: 0.10,
         step: 0.002,
@@ -600,7 +576,7 @@ fn update_language(window: &AppWindow, language: usize) {
     window.set_parameter_labels(ModelRc::new(VecModel::from(
         PARAMETERS
             .iter()
-            .map(|p| format!("{}  {}", p.labels[language], p.hints[language]).into())
+            .map(|p| p.labels[language].into())
             .collect::<Vec<SharedString>>(),
     )));
 }
@@ -635,8 +611,25 @@ fn run() -> Result<(), String> {
     window.set_parameter_maximums(ModelRc::new(VecModel::from(
         PARAMETERS.iter().map(|p| p.max).collect::<Vec<_>>(),
     )));
-    window.set_parameter_groups(ModelRc::new(VecModel::from(
-        PARAMETERS.iter().map(|p| p.group).collect::<Vec<_>>(),
+    window.set_parameter_group_starts(ModelRc::new(VecModel::from(
+        (0..GROUPS.len())
+            .map(|group| {
+                PARAMETERS
+                    .iter()
+                    .position(|p| p.group == group as i32)
+                    .unwrap_or(0) as i32
+            })
+            .collect::<Vec<_>>(),
+    )));
+    window.set_parameter_group_counts(ModelRc::new(VecModel::from(
+        (0..GROUPS.len())
+            .map(|group| {
+                PARAMETERS
+                    .iter()
+                    .filter(|p| p.group == group as i32)
+                    .count() as i32
+            })
+            .collect::<Vec<_>>(),
     )));
     window.set_parameter_values(ModelRc::new(VecModel::from(values)));
     window.set_effect_enabled(detect_enabled());

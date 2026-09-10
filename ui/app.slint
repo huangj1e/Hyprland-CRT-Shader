@@ -6,7 +6,7 @@ component ThemeButton inherits Rectangle {
     in property <color> foreground;
     in property <color> surface;
     callback clicked;
-    height: 32px;
+    height: 30px;
     min-width: button-text.preferred-width + 28px;
     preferred-width: button-text.preferred-width + 28px;
     border-radius: 6px;
@@ -33,7 +33,7 @@ component ThemeToggle inherits Rectangle {
     in property <color> selected-foreground;
     in-out property <bool> checked;
     callback toggled(bool);
-    height: 32px;
+    height: 30px;
     min-width: toggle-text.preferred-width + 28px;
     preferred-width: toggle-text.preferred-width + 28px;
     border-radius: 6px;
@@ -108,7 +108,8 @@ export component AppWindow inherits Window {
     in property <[float]> parameter-values;
     in property <[float]> parameter-minimums;
     in property <[float]> parameter-maximums;
-    in property <[int]> parameter-groups;
+    in property <[int]> parameter-group-starts;
+    in property <[int]> parameter-group-counts;
 
     callback parameter-changed(int, float);
     callback toggle-effect(bool);
@@ -129,8 +130,8 @@ export component AppWindow inherits Window {
             reject;
         }
         VerticalLayout {
-            padding: 16px;
-            spacing: 9px;
+            padding: 14px;
+            spacing: 6px;
             HorizontalLayout {
                 Text { text: root.window-title; color: root.text-color; font-size: 20px; font-weight: 700; vertical-alignment: center; }
                 Rectangle { horizontal-stretch: 1; }
@@ -149,21 +150,22 @@ export component AppWindow inherits Window {
                 vertical-stretch: 1;
                 VerticalLayout {
                     padding-right: 10px;
-                    spacing: 8px;
+                    spacing: 6px;
                     for title[i] in root.group-titles: VerticalLayout {
-                        spacing: 5px;
+                        spacing: 2px;
                         Rectangle {
-                            height: 27px;
+                            height: 25px;
                             background: root.panel-color;
                             border-radius: 5px;
                             Text { x: 10px; width: parent.width - 20px; text: title; color: root.accent-color; font-size: 12px; font-weight: 700; vertical-alignment: center; }
                         }
-                        for label[j] in root.parameter-labels: HorizontalLayout {
-                            height: 26px;
+                        for row in root.parameter-group-counts[i]: HorizontalLayout {
+                            property <int> parameter-index: root.parameter-group-starts[i] + row;
+                            height: 23px;
                             spacing: 12px;
-                            if root.parameter-groups[j] == i: Text { text: label; color: root.text-color; font-size: 11px; width: 185px; vertical-alignment: center; }
-                            if root.parameter-groups[j] == i: ThemeSlider { value: root.parameter-values[j]; minimum: root.parameter-minimums[j]; maximum: root.parameter-maximums[j]; accent: root.accent-color; track-color: root.panel-color; changed(value) => { root.parameter-changed(j, value); } }
-                            if root.parameter-groups[j] == i: Text { text: "" + round(root.parameter-values[j] * 1000) / 1000; color: root.text-color; width: 64px; horizontal-alignment: right; vertical-alignment: center; }
+                            Text { text: root.parameter-labels[parent.parameter-index]; color: root.text-color; font-size: 11px; width: 185px; vertical-alignment: center; }
+                            ThemeSlider { value: root.parameter-values[parent.parameter-index]; minimum: root.parameter-minimums[parent.parameter-index]; maximum: root.parameter-maximums[parent.parameter-index]; accent: root.accent-color; track-color: root.panel-color; changed(value) => { root.parameter-changed(parent.parameter-index, value); } }
+                            Text { text: "" + round(root.parameter-values[parent.parameter-index] * 1000) / 1000; color: root.text-color; width: 64px; horizontal-alignment: right; vertical-alignment: center; }
                         }
                     }
                 }
