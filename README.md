@@ -278,22 +278,10 @@ Important behavior:
 
 - Package upgrades do not overwrite the user copy.
 - **Reset defaults** reads defaults from the currently installed system shader.
-- Disabling the effect clears `screen_shader` and restores `damage_tracking = 1`, `vfr = true` for the running session.
-- Panel changes are runtime changes. A later `hyprctl reload` can restore the path declared in your Hyprland configuration.
-- To keep panel-tuned values across Hyprland reloads, configure `screen_shader` to the user-copy path rather than the packaged path.
-
-Example persistent user-copy configuration (replace `/home/your-user` with the actual absolute home path):
-
-```ini
-decoration {
-    screen_shader = /home/your-user/.config/hyprland-crt-shader/crt.frag
-}
-
-debug {
-    damage_tracking = 0
-    vfr = false
-}
-```
+- Applying a value automatically writes persistent configuration below `${XDG_CONFIG_HOME:-$HOME/.config}/hyprland-crt-shader/` and adds one marked include to `~/.config/hypr/hyprland.conf` and/or `~/.config/hypr/hyprland.lua`.
+- The generated persistent configuration points `screen_shader` at the user copy, so panel values survive `hyprctl reload`, Hyprland restarts, and login.
+- Disabling or emergency-disabling the effect also updates the generated configuration to keep it disabled after restart and restores `damage_tracking = 1`, `vfr = true`.
+- Existing Hyprland configuration is otherwise preserved; the marked include is added only once.
 
 The panel starts in English. Click the language button to cycle through Chinese, English, Japanese, and Korean. On Omarchy it reads `~/.local/state/omarchy/current/theme/colors.toml`, watches that file for changes once per second, and accepts `OMARCHY_ACCENT` as an accent-color override.
 

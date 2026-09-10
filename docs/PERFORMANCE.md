@@ -33,7 +33,7 @@ debug:damage_tracking = 1
 debug:vfr = true
 ```
 
-These are runtime changes. A later Hyprland reload can reapply values from the user's configuration file.
+The panel also writes its enabled/disabled state to a generated user configuration include, so the selected state survives Hyprland reloads and restarts.
 
 If battery life or idle power is more important than animation, disable the effect when not needed, remove the shader configuration, or use a static variant that does not depend on `time` before restoring VFR/damage tracking.
 

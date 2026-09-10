@@ -164,7 +164,8 @@ Test readable text, window movement, fullscreen content, idle animation, all ava
 - Parameter keys, ranges, steps, groups, and four-language labels
 - System/source shader discovery
 - Persistent user-copy creation and atomic constant replacement
-- Runtime application through `hyprctl eval`
+- Generated Hyprland config includes for persistence across reloads and restarts
+- Immediate runtime application through `hyprctl eval`
 - 180 ms live-preview debounce
 - Omarchy theme loading and one-second file polling
 - UI callbacks and emergency recovery

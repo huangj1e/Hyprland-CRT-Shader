@@ -274,22 +274,10 @@ ${XDG_CONFIG_HOME:-$HOME/.config}/hyprland-crt-shader/crt.frag
 
 - 软件包升级不会覆盖用户副本。
 - “恢复默认”读取当前系统安装 Shader 中的默认值。
-- 关闭特效会在当前会话清空 `screen_shader`，并恢复 `damage_tracking = 1`、`vfr = true`。
-- 面板执行的是运行时配置；后续 `hyprctl reload` 可能重新应用 Hyprland 配置文件中声明的路径。
-- 如果希望面板调节结果在 Hyprland Reload 后继续生效，应在配置文件中将 `screen_shader` 指向用户副本，而不是软件包文件。
-
-持久使用用户副本的配置示例（请将 `/home/your-user` 替换为实际的绝对主目录路径）：
-
-```ini
-decoration {
-    screen_shader = /home/your-user/.config/hyprland-crt-shader/crt.frag
-}
-
-debug {
-    damage_tracking = 0
-    vfr = false
-}
-```
+- 应用参数时，面板会自动在 `${XDG_CONFIG_HOME:-$HOME/.config}/hyprland-crt-shader/` 下写入持久配置，并向 `~/.config/hypr/hyprland.conf` 和/或 `~/.config/hypr/hyprland.lua` 添加一条带标记的加载项。
+- 生成的配置会将 `screen_shader` 指向用户副本，因此面板参数在 `hyprctl reload`、Hyprland 重启和重新登录后仍然生效。
+- 关闭或紧急关闭特效时，面板也会更新持久配置，使关闭状态在重启后保持，并恢复 `damage_tracking = 1`、`vfr = true`。
+- 除添加该加载项外，程序不会改写原有 Hyprland 配置；同一标记只会添加一次。
 
 控制面板默认使用英文。点击语言按钮可在中文、英文、日文和韩文之间循环。在 Omarchy 环境中，程序读取 `~/.local/state/omarchy/current/theme/colors.toml`，每秒检查一次主题变化，并支持使用 `OMARCHY_ACCENT` 环境变量覆盖强调色。
 

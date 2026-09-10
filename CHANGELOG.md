@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Fixed
+
+- Persist control-panel shader values and enabled state across Hyprland reloads, restarts, and login by generating a user configuration include.
+
 ## [1.1.0] - 2026-09-10
 
 ### Added

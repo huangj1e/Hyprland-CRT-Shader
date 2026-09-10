@@ -8,6 +8,7 @@ Version 1.1.0 delivers the native live-control workflow and a refined multilingu
 - Live tuning for glitch timing, shake, waves, rolling tears, RGB separation, noise, and CRT display parameters
 - 180 ms debounced live preview to avoid recompiling on every raw pointer event
 - Persistent user shader at `${XDG_CONFIG_HOME:-$HOME/.config}/hyprland-crt-shader/crt.frag`
+- Automatically generated Hyprland include so UI changes survive reloads, restarts, and login
 - Chinese, English, Japanese, and Korean interface languages
 - Omarchy theme colors with automatic refresh when the theme changes
 - `Ctrl+R` to restore installed defaults
@@ -89,7 +90,7 @@ mv ~/.config/hyprland-crt-shader/crt.frag \
 hypr-crt-control
 ```
 
-A Hyprland reload may restore the shader path from your configuration. To persist panel-tuned values across reloads, point `screen_shader` at `~/.config/hyprland-crt-shader/crt.frag` in your own configuration.
+After the first apply, the panel adds a marked include to the active `~/.config/hypr/hyprland.conf` and/or `hyprland.lua`. That generated configuration points to the user shader, so tuned values and the enabled/disabled state survive Hyprland reloads and restarts.
 
 ## Emergency recovery
 
