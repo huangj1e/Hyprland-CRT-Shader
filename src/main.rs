@@ -88,6 +88,54 @@ const UI_TEXT: [[&str; 4]; 9] = [
     ],
 ];
 
+const STATUS_TEXT: [[&str; 4]; 10] = [
+    ["已应用", "Applied", "適用しました", "적용됨"],
+    [
+        "应用失败",
+        "Apply failed",
+        "適用に失敗しました",
+        "적용 실패",
+    ],
+    ["已启用", "Enabled", "有効にしました", "활성화됨"],
+    ["已关闭", "Disabled", "無効にしました", "비활성화됨"],
+    [
+        "切换失败",
+        "Toggle failed",
+        "切り替えに失敗しました",
+        "전환 실패",
+    ],
+    [
+        "已恢复默认",
+        "Defaults restored",
+        "デフォルトに戻しました",
+        "기본값 복원됨",
+    ],
+    [
+        "恢复失败",
+        "Reset failed",
+        "リセットに失敗しました",
+        "복원 실패",
+    ],
+    [
+        "紧急关闭失败",
+        "Emergency disable failed",
+        "緊急無効化に失敗しました",
+        "긴급 비활성화 실패",
+    ],
+    [
+        "已打开目录",
+        "Folder opened",
+        "フォルダーを開きました",
+        "폴더 열림",
+    ],
+    [
+        "无法打开目录",
+        "Open folder failed",
+        "フォルダーを開けませんでした",
+        "폴더 열기 실패",
+    ],
+];
+
 const PARAMETERS: &[Parameter] = &[
     Parameter {
         key: "GLITCH_INTERVAL",
@@ -691,6 +739,10 @@ fn localized_text(index: usize, language: usize) -> SharedString {
     UI_TEXT[index][language.min(3)].into()
 }
 
+fn localized_status(index: usize, language: i32) -> SharedString {
+    STATUS_TEXT[index][language.clamp(0, 3) as usize].into()
+}
+
 fn update_language(window: &AppWindow, language: usize) {
     let language = language.min(3);
     window.set_language_index(language as i32);
@@ -715,12 +767,6 @@ fn update_language(window: &AppWindow, language: usize) {
             .map(|p| p.labels[language].into())
             .collect::<Vec<SharedString>>(),
     )));
-}
-
-fn set_status(window: &slint::Weak<AppWindow>, message: &str) {
-    if let Some(window) = window.upgrade() {
-        window.set_status_text(message.into());
-    }
 }
 
 fn run() -> Result<(), String> {
@@ -848,8 +894,11 @@ fn run() -> Result<(), String> {
             return;
         };
         match apply(&window, &path) {
-            Ok(()) => window.set_status_text("已应用 / Applied".into()),
-            Err(error) => window.set_status_text(format!("应用失败: {error}").into()),
+            Ok(()) => window.set_status_text(localized_status(0, window.get_language_index())),
+            Err(error) => {
+                eprintln!("hyprland-crt-shader: apply failed: {error}");
+                window.set_status_text(localized_status(1, window.get_language_index()));
+            }
         }
     });
 
@@ -861,18 +910,18 @@ fn run() -> Result<(), String> {
         } else {
             persist_effect(false, &path).and_then(|()| set_effect(false, &path))
         };
-        set_status(
-            &weak,
-            if result.is_ok() {
-                if enabled {
-                    "已启用 / Enabled"
-                } else {
-                    "已关闭 / Disabled"
+        if let Some(window) = weak.upgrade() {
+            let language = window.get_language_index();
+            match result {
+                Ok(()) => {
+                    window.set_status_text(localized_status(if enabled { 2 } else { 3 }, language))
                 }
-            } else {
-                "切换失败 / Toggle failed"
-            },
-        );
+                Err(error) => {
+                    eprintln!("hyprland-crt-shader: toggle failed: {error}");
+                    window.set_status_text(localized_status(4, language));
+                }
+            }
+        }
     });
 
     let weak = window.as_weak();
@@ -884,29 +933,45 @@ fn run() -> Result<(), String> {
         };
         window.set_parameter_values(ModelRc::new(VecModel::from(defaults.clone())));
         match apply(&window, &path) {
-            Ok(()) => window.set_status_text("已恢复默认 / Defaults restored".into()),
-            Err(error) => window.set_status_text(format!("恢复失败: {error}").into()),
+            Ok(()) => window.set_status_text(localized_status(5, window.get_language_index())),
+            Err(error) => {
+                eprintln!("hyprland-crt-shader: reset failed: {error}");
+                window.set_status_text(localized_status(6, window.get_language_index()));
+            }
         }
     });
 
     let weak = window.as_weak();
     let path = user_shader.clone();
     window.on_emergency_disable(move || {
-        if let Err(error) = persist_effect(false, &path).and_then(|()| set_effect(false, &path)) {
-            set_status(&weak, &format!("Emergency disable failed: {error}"));
-        } else if let Some(window) = weak.upgrade() {
-            window.set_effect_enabled(false);
-            window.set_status_text("Effect disabled / 特效已关闭".into());
+        let result = persist_effect(false, &path).and_then(|()| set_effect(false, &path));
+        if let Some(window) = weak.upgrade() {
+            match result {
+                Ok(()) => {
+                    window.set_effect_enabled(false);
+                    window.set_status_text(localized_status(3, window.get_language_index()));
+                }
+                Err(error) => {
+                    eprintln!("hyprland-crt-shader: emergency disable failed: {error}");
+                    window.set_status_text(localized_status(7, window.get_language_index()));
+                }
+            }
         }
     });
 
     let weak = window.as_weak();
-    window.on_open_folder(
-        move || match Command::new("xdg-open").arg(&user_dir).spawn() {
-            Ok(_) => set_status(&weak, "已打开目录 / Folder opened"),
-            Err(_) => set_status(&weak, "无法打开目录 / Open failed"),
-        },
-    );
+    window.on_open_folder(move || {
+        let result = Command::new("xdg-open").arg(&user_dir).spawn();
+        if let Some(window) = weak.upgrade() {
+            match result {
+                Ok(_) => window.set_status_text(localized_status(8, window.get_language_index())),
+                Err(error) => {
+                    eprintln!("hyprland-crt-shader: open folder failed: {error}");
+                    window.set_status_text(localized_status(9, window.get_language_index()));
+                }
+            }
+        }
+    });
 
     window.run().map_err(|e| e.to_string())
 }
