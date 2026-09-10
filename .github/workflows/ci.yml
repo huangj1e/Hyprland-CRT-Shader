@@ -30,7 +30,7 @@ jobs:
         run: |
           useradd -m builder
           chown -R builder:builder "$GITHUB_WORKSPACE"
-          runuser -u builder -- "$GITHUB_WORKSPACE/scripts/build-arch-package.sh" --noconfirm
+          runuser -u builder -- "$GITHUB_WORKSPACE/scripts/build-arch-package.sh" --noconfirm --nodeps
       - uses: actions/upload-artifact@v4
         with:
           name: arch-package
