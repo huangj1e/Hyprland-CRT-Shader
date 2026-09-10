@@ -4,9 +4,8 @@ set -euo pipefail
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
 
-bash -n bin/hypr-crt-toggle
-python -m py_compile bin/hypr-crt-control
-rm -rf bin/__pycache__
+cargo fmt --check
+cargo check --locked
 
 if command -v glslangValidator >/dev/null 2>&1; then
     glslangValidator -S frag shaders/crt.frag

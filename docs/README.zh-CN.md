@@ -121,7 +121,13 @@ Hyprland Screen Shader 当前不能直接接收任意用户 uniform，因此面�
 
 面板临时让 Hyprland 使用该文件并重新编译 Shader，不会修改 `/usr/share` 中由 pacman 管理的原始文件。参数会保存在用户副本中，下次打开面板时继续使用。
 
-图形界面依赖 Python 和 Tk；Arch 软件包会自动安装这些依赖。
+控制面板已使用 Rust + Slint 原生重构，运行时不再依赖 Python 或 Tk。可以使用以下命令从源码构建：
+
+```bash
+cargo build --release --locked
+```
+
+生成的二进制位于 `target/release/hyprland-crt-shader`，安装后同时提供 `hypr-crt-control` 图形控制面板和 `hypr-crt-toggle` 命令行临时开关。
 
 ## 临时开关
 

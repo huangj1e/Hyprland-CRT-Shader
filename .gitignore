@@ -3,11 +3,12 @@
 *.pkg.tar.*.sig
 *.src.tar.*
 pkg/
-src/
+/packaging/arch/src/
 
 # Project build output
 /build/
 /dist/
+/target/
 
 # Logs and editor files
 *.log

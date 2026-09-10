@@ -21,8 +21,11 @@ mkdir -p "$build_dir" "$dist_dir"
 cp "$root/packaging/arch/PKGBUILD" "$build_dir/PKGBUILD"
 cp "$root/LICENSE" "$build_dir/LICENSE"
 cp "$root/shaders/crt.frag" "$build_dir/crt.frag"
-cp "$root/bin/hypr-crt-toggle" "$build_dir/hypr-crt-toggle"
-cp "$root/bin/hypr-crt-control" "$build_dir/hypr-crt-control"
+cp "$root/Cargo.toml" "$root/Cargo.lock" "$root/build.rs" "$build_dir/"
+cp -r "$root/src" "$root/ui" "$build_dir/"
+# makepkg treats source directories as paths relative to the PKGBUILD.
+ln -s . "$build_dir/src-dir"
+ln -s . "$build_dir/ui-dir"
 cp "$root/config/hyprland-crt-shader.lua" "$build_dir/hyprland-crt-shader.lua"
 cp "$root/config/hyprland-crt-shader.conf" "$build_dir/hyprland-crt-shader.conf"
 

@@ -7,12 +7,13 @@ Thanks for helping improve Hyprland CRT Shader.
 Required for full validation on Arch Linux:
 
 ```bash
-sudo pacman -S --needed git base-devel glslang python tk
+sudo pacman -S --needed git base-devel glslang rust cargo cmake ninja fontconfig libxkbcommon wayland
 ```
 
 Run checks before submitting a change:
 
 ```bash
+cargo fmt --check
 make check
 ```
 

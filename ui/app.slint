@@ -1,0 +1,111 @@
+import { Button, CheckBox, ScrollView, Slider } from "std-widgets.slint";
+
+export component AppWindow inherits Window {
+    title: "Hyprland CRT Shader Control";
+    preferred-width: 780px;
+    preferred-height: 760px;
+    min-width: 680px;
+    min-height: 520px;
+    background: #11151c;
+
+    in-out property <bool> effect-enabled: true;
+    in-out property <bool> live-preview: true;
+    in-out property <string> status-text: "Ready / 就绪";
+    in property <[string]> group-titles;
+    in property <[string]> parameter-labels;
+    in property <[float]> parameter-values;
+    in property <[float]> parameter-minimums;
+    in property <[float]> parameter-maximums;
+    in property <[int]> parameter-groups;
+
+    callback parameter-changed(int, float);
+    callback toggle-effect(bool);
+    callback apply-now();
+    callback reset-defaults();
+    callback open-folder();
+
+    VerticalLayout {
+        padding: 14px;
+        spacing: 10px;
+
+        HorizontalLayout {
+            Text {
+                text: "CRT Shader Control Panel";
+                color: #eef4ff;
+                font-size: 22px;
+                font-weight: 700;
+                vertical-alignment: center;
+            }
+            Rectangle { horizontal-stretch: 1; }
+            CheckBox { text: "实时预览"; checked <=> root.live-preview; }
+            CheckBox {
+                text: "启用效果";
+                checked: root.effect-enabled;
+                toggled => {
+                    root.effect-enabled = self.checked;
+                    root.toggle-effect(self.checked);
+                }
+            }
+        }
+
+        Text {
+            text: "修改用户 Shader 副本；实时预览会在短暂防抖后重新编译。";
+            color: #9daabe;
+            font-size: 13px;
+        }
+
+        ScrollView {
+            vertical-stretch: 1;
+            VerticalLayout {
+                spacing: 8px;
+                for title[i] in root.group-titles: VerticalLayout {
+                    spacing: 5px;
+                    Rectangle {
+                        height: 31px;
+                        background: #202936;
+                        border-radius: 5px;
+                        Text {
+                            x: 9px;
+                            text: title;
+                            color: #8dc7ff;
+                            font-size: 15px;
+                            font-weight: 700;
+                            vertical-alignment: center;
+                        }
+                    }
+                    for label[j] in root.parameter-labels: HorizontalLayout {
+                        if root.parameter-groups[j] == i: Text {
+                            text: label;
+                            color: #d8e0ec;
+                            font-size: 13px;
+                            width: 220px;
+                            vertical-alignment: center;
+                        }
+                        if root.parameter-groups[j] == i: Slider {
+                            value: root.parameter-values[j];
+                            minimum: root.parameter-minimums[j];
+                            maximum: root.parameter-maximums[j];
+                            changed => { root.parameter-changed(j, self.value); }
+                        }
+                        if root.parameter-groups[j] == i: Text {
+                            text: "" + round(root.parameter-values[j] * 1000) / 1000;
+                            color: #f0f5fc;
+                            width: 58px;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 8px;
+            Button { text: "立即应用"; clicked => { root.apply-now(); } }
+            Button { text: "恢复默认"; clicked => { root.reset-defaults(); } }
+            Button { text: "打开 Shader 目录"; clicked => { root.open-folder(); } }
+            Rectangle { horizontal-stretch: 1; }
+            Text { text: root.status-text; color: #9fddaa; vertical-alignment: center; }
+        }
+    }
+}

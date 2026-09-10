@@ -1,0 +1,19 @@
+[package]
+name = "hyprland-crt-shader"
+version = "1.1.0"
+edition = "2021"
+description = "Rust and Slint control panel for the Hyprland CRT screen shader"
+license = "MIT"
+repository = "https://github.com/huangj1e/Hyprland-CRT-Shader"
+build = "build.rs"
+
+[dependencies]
+slint = { version = "=1.9.2", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-femtovg"] }
+
+[build-dependencies]
+slint-build = "=1.9.2"
+
+[profile.release]
+strip = true
+lto = "thin"
+codegen-units = 1

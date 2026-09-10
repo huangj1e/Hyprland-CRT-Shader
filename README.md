@@ -145,7 +145,15 @@ Hyprland does not currently expose arbitrary custom uniforms to screen shaders. 
 
 It then temporarily points Hyprland at this per-user copy and recompiles it. The packaged shader under `/usr/share` remains unchanged. Slider values persist in the user copy between panel sessions.
 
-The GUI requires Python and Tk. They are installed automatically by the Arch package dependencies.
+The control panel is a native Rust application built with Slint. It no longer requires Python or Tk at runtime.
+
+To build the application directly from source:
+
+```bash
+cargo build --release --locked
+```
+
+The binary is written to `target/release/hyprland-crt-shader`; installation exposes it as both `hypr-crt-control` and `hypr-crt-toggle` (the latter selects CLI toggle mode from its executable name).
 
 ## Temporary toggle
 

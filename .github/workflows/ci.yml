@@ -12,9 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install validators
-        run: sudo apt-get update && sudo apt-get install -y glslang-tools python3-tk
-      - name: Validate shader and scripts
+      - name: Install validators and Slint build dependencies
+        run: sudo apt-get update && sudo apt-get install -y glslang-tools libfontconfig1-dev libxkbcommon-dev libwayland-dev
+      - name: Validate shader and Rust application
         run: make check
 
   arch-package:
@@ -22,7 +22,7 @@ jobs:
     container: archlinux:base-devel
     steps:
       - name: Install dependencies
-        run: pacman -Syu --noconfirm git glslang python tk
+        run: pacman -Syu --noconfirm git glslang cargo cmake ninja fontconfig libxkbcommon wayland
       - uses: actions/checkout@v4
       - name: Validate
         run: make check
