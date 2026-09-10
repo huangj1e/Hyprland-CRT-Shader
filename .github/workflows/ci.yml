@@ -5,33 +5,81 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Install validators and Slint build dependencies
-        run: sudo apt-get update && sudo apt-get install -y glslang-tools libfontconfig1-dev libxkbcommon-dev libwayland-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            glslang-tools \
+            libfontconfig1-dev \
+            libxkbcommon-dev \
+            libwayland-dev
+
       - name: Validate shader and Rust application
         run: make check
 
   arch-package:
     runs-on: ubuntu-latest
     container: archlinux:base-devel
+
     steps:
       - name: Install dependencies
-        run: pacman -Syu --noconfirm git glslang cargo cmake ninja fontconfig libxkbcommon wayland
+        run: |
+          pacman -Syu --noconfirm \
+            git \
+            glslang \
+            cargo \
+            cmake \
+            ninja \
+            fontconfig \
+            libxkbcommon \
+            wayland
+
       - uses: actions/checkout@v4
+
       - name: Validate
         run: make check
+
       - name: Build package
         run: |
           useradd -m builder
           chown -R builder:builder "$GITHUB_WORKSPACE"
-          runuser -u builder -- "$GITHUB_WORKSPACE/scripts/build-arch-package.sh" --noconfirm --nodeps
+          runuser -u builder -- \
+            "$GITHUB_WORKSPACE/scripts/build-arch-package.sh" \
+            --noconfirm \
+            --nodeps
+
       - uses: actions/upload-artifact@v4
         with:
           name: arch-package
           path: dist/*.pkg.tar.*
+
+  release:
+    name: Release Arch package
+    needs: arch-package
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download Arch package
+        uses: actions/download-artifact@v4
+        with:
+          name: arch-package
+          path: dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.pkg.tar.*
+          generate_release_notes: true
