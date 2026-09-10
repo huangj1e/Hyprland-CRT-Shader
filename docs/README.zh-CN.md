@@ -4,6 +4,12 @@
 
 [English](../README.md) · [开发与贡献](../CONTRIBUTING.md) · [兼容性](COMPATIBILITY.md) · [性能说明](PERFORMANCE.md) · [更新日志](../CHANGELOG.md)
 
+## 演示
+
+[![Hyprland CRT Shader 演示 — 点击前往 YouTube 观看](review.jpg)](https://youtu.be/snSKB8iGME8)
+
+▶️ **点击上方图片观看 YouTube 演示视频** — CRT 曲面、扫描线、RGB 荧光粉子像素、故障特效与实时控制面板的实际效果。
+
 ## 功能
 
 - CRT 桶形曲面、管面软边缘、扫描线、RGB 荧光粉子像素、暗角和闪烁

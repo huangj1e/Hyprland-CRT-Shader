@@ -8,6 +8,12 @@ A single-pass CRT / analog-TV screen shader for Hyprland, with a native Rust + S
 ![Rust](https://img.shields.io/badge/Rust-2021-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
+## Demo
+
+[![Hyprland CRT Shader demo — click to watch on YouTube](docs/review.jpg)](https://youtu.be/snSKB8iGME8)
+
+▶️ **Click the image above to watch the demo video on YouTube** — CRT curvature, scanlines, RGB phosphor mask, glitch effects, and the live control panel in action.
+
 ## Features
 
 - CRT barrel curvature, soft tube edges, scanlines, RGB phosphor mask, vignette, and flicker
