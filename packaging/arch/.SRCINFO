@@ -13,6 +13,7 @@ pkgbase = hyprland-crt-shader
 	depends = libxkbcommon
 	depends = wayland
 	optdepends = glslang: validate the GLSL shader locally
+	options = !debug
 	source = project.tar.gz
 	sha256sums = SKIP
 
