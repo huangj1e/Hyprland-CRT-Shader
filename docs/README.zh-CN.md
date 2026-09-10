@@ -1,71 +1,212 @@
 # Hyprland CRT Shader
 
-[English](../README.md) · [贡献指南](../CONTRIBUTING.md) · [更新日志](../CHANGELOG.md)
+一个用于 Hyprland 的单 Pass CRT / 模拟电视屏幕 Shader，并提供 Rust + Slint 原生图形控制面板进行实时调节。
 
-一个作用于 Hyprland 最终合成画面的单 Pass CRT / 模拟电视 Shader。默认包含周期性故障效果，同时尽量保持桌面文字可读。
+[English](../README.md) · [开发与贡献](../CONTRIBUTING.md) · [兼容性](COMPATIBILITY.md) · [性能说明](PERFORMANCE.md) · [更新日志](../CHANGELOG.md)
 
-## 效果
+## 功能
 
-- CRT 桶形曲面和管面软边缘
-- 水平扫描线和 RGB 荧光粉子像素
-- 色差、暗角和轻微闪烁
-- 每帧变化的模拟信号噪点
-- 水平同步波浪和偶发跳线
-- 从上向下滚动的垂直同步撕裂带
-- 周期性整屏坏信号、RGB 分离和矩形块噪声
+- CRT 桶形曲面、管面软边缘、扫描线、RGB 荧光粉子像素、暗角和闪烁
+- 模拟白噪点、水平干扰、色差和 RGB 分离
+- 整屏抖动、水平同步波浪、块状噪声、周期性信号故障和滚动同步撕裂
+- 通过 Hyprland `fullSize` uniform 按物理像素计算位移，不写死分辨率
+- 原生图形控制面板，以及 180 毫秒防抖实时预览
+- 使用持久化用户 Shader 副本，不直接修改软件包文件
+- 中文、英文、日文和韩文界面
+- 自动读取 Omarchy 配色并实时响应主题文件变化
+- 恢复快捷键：`Ctrl+R` 恢复默认参数，`Ctrl+Shift+E` 紧急关闭特效
 
-实现中没有循环、模糊、FBM 或 Simplex Noise。通常每像素进行 4 次纹理采样。所有像素参数都通过 Hyprland 的 `fullSize` uniform 换算，没有写死分辨率。
+Shader 只有一个 Pass，通常每个像素执行 4 次纹理采样，没有循环、模糊核、FBM 或 Simplex Noise。
 
-## 兼容性
+## 环境要求
 
-目标 API：
+### 运行环境
 
-```glsl
-in vec2 v_texcoord;
-uniform sampler2D tex;
-uniform float time;
-uniform vec2 fullSize;
-```
+- Hyprland，并提供以下 Screen Shader 接口：
 
-已在 Hyprland 0.56.2 上开发和测试。使用相差较大的版本时，请先确认 Hyprland Screen Shader API。
+  ```glsl
+  in vec2 v_texcoord;
+  uniform sampler2D tex;
+  uniform float time;
+  uniform vec2 fullSize;
+  ```
 
-## Arch Linux 安装
+- `PATH` 中可以找到 `hyprctl`
+- 控制面板运行所需的 Fontconfig、libxkbcommon 和 Wayland 运行库
+- 使用“打开 Shader 目录”按钮需要 `xdg-open`，通常由 `xdg-utils` 提供
 
-确保系统具有基本构建工具：
+当前代码和软件包元数据面向 Hyprland 0.56 及以上版本，已在 Hyprland 0.56.2 上测试。使用差异较大的版本前请阅读[兼容性说明](COMPATIBILITY.md)。
+
+### 构建环境
+
+- Rust 稳定工具链和 Cargo（Rust 2021 Edition）
+- C/C++ 基础构建工具
+- CMake 和 Ninja（Slint 渲染器依赖需要）
+- Fontconfig、libxkbcommon 和 Wayland 开发文件
+- 推荐安装 `glslangValidator`，在 Arch 中由 `glslang` 提供，用于完整验证 Shader
+
+Arch Linux：
 
 ```bash
-sudo pacman -S --needed base-devel git
+sudo pacman -S --needed base-devel git rust cargo cmake ninja fontconfig libxkbcommon wayland glslang
 ```
 
-克隆并以普通用户构建 pacman 软件包：
+Debian/Ubuntu 的软件包名称可能随版本变化，常见安装命令为：
+
+```bash
+sudo apt update
+sudo apt install git build-essential cargo rustc cmake ninja-build \
+  libfontconfig1-dev libxkbcommon-dev libwayland-dev glslang-tools
+```
+
+## Arch Linux 快速安装
+
+请使用**普通用户**构建原生 pacman 软件包：
 
 ```bash
 git clone https://github.com/huangj1e/Hyprland-CRT-Shader.git
-cd hyprland-crt-shader
+cd Hyprland-CRT-Shader
 make check
 make package
 sudo pacman -U ./dist/hyprland-crt-shader-*.pkg.tar.zst
 ```
 
-不要使用 root 运行 `make package` 或 `makepkg`。独立的 AUR 元数据位于 `packaging/arch/`。
+在 `~/.config/hypr/hyprland.conf` 中启用软件包提供的配置：
 
-如果已经下载预编译包：
-
-```bash
-sudo pacman -U ./hyprland-crt-shader-1.0.0-1-any.pkg.tar.zst
+```ini
+source = /usr/share/hyprland-crt-shader/hyprland-crt-shader.conf
 ```
 
-项目正式提交到 AUR 后可以使用：
+重新加载并检查：
 
 ```bash
-yay -S hyprland-crt-shader
+hyprctl reload
+hyprctl configerrors
+hyprctl getoption decoration:screen_shader
 ```
 
-注意：项目仍需由维护者提交到 AUR，其他用户才能使用上面的 AUR 安装命令。
+从应用程序菜单启动控制面板，或运行：
 
-## 启用
+```bash
+hypr-crt-control
+```
 
-软件包将 Shader 安装到：
+## 从源码构建
+
+克隆仓库并执行所有可用检查：
+
+```bash
+git clone https://github.com/huangj1e/Hyprland-CRT-Shader.git
+cd Hyprland-CRT-Shader
+make check
+```
+
+`make check` 实际执行：
+
+```bash
+cargo fmt --check
+cargo check --locked
+glslangValidator -S frag shaders/crt.frag  # 已安装时执行
+```
+
+构建优化版本：
+
+```bash
+cargo build --release --locked
+```
+
+生成文件：
+
+```text
+target/release/hyprland-crt-shader
+```
+
+可以在 Hyprland 会话中从源码目录直接运行：
+
+```bash
+./target/release/hyprland-crt-shader
+```
+
+如果不存在 `HYPRLAND_INSTANCE_SIGNATURE`，程序会退出。从源码目录运行时，程序会通过编译时项目路径找到 `shaders/crt.frag`。
+
+## 从源码直接部署
+
+在 Arch Linux 上优先建议使用后文的 pacman 打包方式。如果需要直接安装到系统：
+
+```bash
+cargo build --release --locked
+sudo env "PATH=$PATH" make install PREFIX=/usr
+```
+
+目前 `make install` 在复制文件之前会再次执行 Release 构建，因此 `sudo` 环境的 `PATH` 必须能够找到 Cargo。可以先使用 `DESTDIR` 暂存并检查安装内容，不修改当前根文件系统：
+
+```bash
+rm -rf ./stage
+make install DESTDIR="$PWD/stage" PREFIX=/usr
+find ./stage -type f -print
+```
+
+安装文件如下：
+
+| 路径 | 用途 |
+|---|---|
+| `/usr/bin/hypr-crt-control` | 控制面板启动命令 |
+| `/usr/share/applications/hyprland-crt-control.desktop` | 桌面应用入口 |
+| `/usr/share/hyprland-crt-shader/crt.frag` | 软件包 Shader，也是控制面板的默认值来源 |
+| `/usr/share/hyprland-crt-shader/hyprland-crt-shader.lua` | Lua 配置示例 |
+| `/usr/share/hyprland-crt-shader/hyprland-crt-shader.conf` | 传统配置 include 文件 |
+| `/usr/share/licenses/hyprland-crt-shader/LICENSE` | 许可证 |
+
+也可以使用 `PREFIX=/usr/local`。程序会依次查找 `/usr/share/hyprland-crt-shader/crt.frag` 和 `/usr/local/share/hyprland-crt-shader/crt.frag`。
+
+删除通过 Makefile 直接安装的文件：
+
+```bash
+sudo make uninstall PREFIX=/usr
+```
+
+## 构建 Arch Linux 软件包
+
+不要使用 root 运行 `makepkg`、`make package` 或 `scripts/build-arch-package.sh`。
+
+```bash
+make check
+make package
+```
+
+打包脚本会：
+
+1. 重新创建 `build/arch/`。
+2. 复制 Shader、Rust/Slint 源码、配置示例、桌面入口、锁文件和许可证。
+3. 执行 `makepkg --cleanbuild --force`，并继续传递脚本收到的附加参数。
+4. 重新生成 `packaging/arch/.SRCINFO`。
+5. 将生成的 `*.pkg.tar.*` 复制到 `dist/`。
+
+无人值守构建：
+
+```bash
+./scripts/build-arch-package.sh --noconfirm
+```
+
+检查并安装结果：
+
+```bash
+pacman -Qip ./dist/hyprland-crt-shader-*.pkg.tar.zst
+pacman -Qlp ./dist/hyprland-crt-shader-*.pkg.tar.zst
+sudo pacman -U ./dist/hyprland-crt-shader-*.pkg.tar.zst
+```
+
+升级时，在新代码上重新打包并再次执行 `pacman -U`。卸载：
+
+```bash
+sudo pacman -Rns hyprland-crt-shader
+```
+
+仓库中的 `packaging/arch/PKGBUILD` 通过暂存脚本打包当前工作树，适用于本地和 CI 构建。正式发布到 AUR 时，还需要创建 AUR 仓库、使用发布源码 URL 和校验和，并遵守正常的 AUR 维护流程。在项目确实发布到 AUR 之前，不应假定 `yay -S hyprland-crt-shader` 可用。
+
+## 配置 Hyprland
+
+安装后的 Shader 位于：
 
 ```text
 /usr/share/hyprland-crt-shader/crt.frag
@@ -87,6 +228,12 @@ hl.config({
 })
 ```
 
+如果 Lua 配置环境支持绝对路径 `require`，也可以加载软件包示例：
+
+```lua
+require("/usr/share/hyprland-crt-shader/hyprland-crt-shader")
+```
+
 ### 传统配置
 
 在 `~/.config/hypr/hyprland.conf` 中加入：
@@ -95,100 +242,103 @@ hl.config({
 source = /usr/share/hyprland-crt-shader/hyprland-crt-shader.conf
 ```
 
-重新加载并检查：
+`damage_tracking = 0` 和 `vfr = false` 可以让基于 `time` 的动画在桌面静止时继续播放，但会增加功耗。
+
+### 验证部署
 
 ```bash
 hyprctl reload
 hyprctl configerrors
 hyprctl getoption decoration:screen_shader
+ls -l /usr/share/hyprland-crt-shader/crt.frag
+command -v hypr-crt-control
 ```
 
-## 实时图形控制面板
+## 控制面板和用户数据
 
-在 Hyprland 终端中运行：
+必须在活动的 Hyprland 会话中启动：
 
 ```bash
 hypr-crt-control
 ```
 
-控制面板提供分组滑块，可以实时调节故障周期、抖动、水平波浪、滚动撕裂、RGB 分离、噪声、曲率、扫描线、暗角、闪烁和 Overscan。拖动后经过约 180 毫秒防抖即重新加载效果。
-
-Hyprland Screen Shader 当前不能直接接收任意用户 uniform，因此面板会创建并编辑用户副本：
+首次运行时会创建：
 
 ```text
-~/.config/hyprland-crt-shader/crt.frag
+${XDG_CONFIG_HOME:-$HOME/.config}/hyprland-crt-shader/crt.frag
 ```
 
-面板临时让 Hyprland 使用该文件并重新编译 Shader，不会修改 `/usr/share` 中由 pacman 管理的原始文件。参数会保存在用户副本中，下次打开面板时继续使用。
+仅当用户副本不存在时，程序才从系统 Shader 复制该文件。控制面板会原子更新其中的参数常量，通过 `hyprctl eval` 让 Hyprland 使用用户副本并重新编译；开启实时预览后，滑块变化采用 180 毫秒防抖。
 
-控制面板已使用 Rust + Slint 原生重构，运行时不再依赖 Python 或 Tk。界面支持中文、英文、日文和韩文独立切换；在 Omarchy 中启动时会读取当前主题的 `~/.local/state/omarchy/current/theme/colors.toml`，同步使用主题色。可以使用以下命令从源码构建：
+需要注意：
 
-```bash
-cargo build --release --locked
+- 软件包升级不会覆盖用户副本。
+- “恢复默认”读取当前系统安装 Shader 中的默认值。
+- 关闭特效会在当前会话清空 `screen_shader`，并恢复 `damage_tracking = 1`、`vfr = true`。
+- 面板执行的是运行时配置；后续 `hyprctl reload` 可能重新应用 Hyprland 配置文件中声明的路径。
+- 如果希望面板调节结果在 Hyprland Reload 后继续生效，应在配置文件中将 `screen_shader` 指向用户副本，而不是软件包文件。
+
+持久使用用户副本的配置示例（请将 `/home/your-user` 替换为实际的绝对主目录路径）：
+
+```ini
+decoration {
+    screen_shader = /home/your-user/.config/hyprland-crt-shader/crt.frag
+}
+
+debug {
+    damage_tracking = 0
+    vfr = false
+}
 ```
 
-生成的二进制位于 `target/release/hyprland-crt-shader`。安装后会提供 `hypr-crt-control` 以及桌面应用入口，可以直接从应用程序菜单启动控制面板。为避免调节时画面无法交互，窗口中会显示 `Ctrl+R` 恢复默认参数和 `Ctrl+Shift+E` 紧急关闭特效两个快捷键。
+控制面板默认使用英文。点击语言按钮可在中文、英文、日文和韩文之间循环。在 Omarchy 环境中，程序读取 `~/.local/state/omarchy/current/theme/colors.toml`，每秒检查一次主题变化，并支持使用 `OMARCHY_ACCENT` 环境变量覆盖强调色。
 
-## 调节参数
+## 手动修改 Shader
 
-[`shaders/crt.frag`](../shaders/crt.frag) 顶部已经包含完整中文参数说明。主要参数：
-
-| 效果 | 参数 |
-|---|---|
-| 故障周期 | `GLITCH_INTERVAL`、`GLITCH_DURATION`、`GLITCH_POWER` |
-| 整屏抖动 | `SHAKE_BASE_PIXELS`、`SHAKE_GLITCH_PIXELS` |
-| 水平波浪 | `WAVE_BASE_PIXELS`、`WAVE_GLITCH_PIXELS` |
-| 滚动撕裂 | `ROLLING_TEAR_STRENGTH`、`ROLLING_TEAR_WIDTH`、`ROLLING_TEAR_SPEED` |
-| RGB 分离 | `RGB_SHIFT_BASE_PIXELS`、`RGB_SHIFT_GLITCH` |
-| 块状噪声 | `BLOCK_NOISE_STRENGTH`、`BLOCK_NOISE_AMOUNT` |
-| CRT 外观 | `CURVATURE`、`SCANLINE_STRENGTH`、`RGB_MASK_STRENGTH`、`VIGNETTE_STRENGTH` |
-
-不要直接编辑 `/usr/share` 下的软件包文件。先复制到用户目录：
+如需维护独立的手工配置：
 
 ```bash
 mkdir -p ~/.config/hypr/shaders
 cp /usr/share/hyprland-crt-shader/crt.frag ~/.config/hypr/shaders/crt.frag
-```
-
-然后把 `screen_shader` 改为用户目录中的文件。这样升级软件包不会覆盖自定义参数。
-
-修改后验证：
-
-```bash
+$EDITOR ~/.config/hypr/shaders/crt.frag
 glslangValidator -S frag ~/.config/hypr/shaders/crt.frag
-hyprctl reload
-hyprctl configerrors
 ```
 
-## 性能和功耗
+把 `decoration:screen_shader` 指向该文件，然后 Reload Hyprland。可调常量集中在 [`shaders/crt.frag`](../shaders/crt.frag) 顶部。不要直接编辑 `/usr/share`，软件包升级时会替换其中的文件。
 
-为了让 `time` 动画在桌面静止时继续播放，需要：
+## 故障恢复与排查
 
-```text
-debug:damage_tracking = 0
-debug:vfr = false
-```
-
-这会提高静止桌面的 GPU 使用和笔记本功耗，4K、多显示器环境更加明显。暂时不需要时可以在控制面板中关闭效果。
-
-## 故障恢复
-
-在可用终端中临时关闭：
+在可用终端中立即关闭特效：
 
 ```bash
 hyprctl eval 'hl.config({ decoration = { screen_shader = "" }, debug = { damage_tracking = 1, vfr = true } })'
 ```
 
-如果画面无法操作，请切换到 TTY，删除或注释 Hyprland 配置中的 `screen_shader` 设置，再重新进入 Hyprland 会话。软件包安装过程本身不会修改用户配置。
+控制面板内可按 `Ctrl+Shift+E` 紧急关闭；按 `Ctrl+R` 恢复已安装版本的默认参数。
 
-## 卸载
+如果画面已经无法操作，请切换到 TTY，删除或注释 Shader 配置，然后重启 Hyprland 会话。安装脚本和软件包都不会自动修改用户的 Hyprland 配置。
+
+常用检查命令：
 
 ```bash
-sudo pacman -Rns hyprland-crt-shader
+hyprctl configerrors
+hyprctl getoption decoration:screen_shader
+glslangValidator -S frag /usr/share/hyprland-crt-shader/crt.frag
+echo "$HYPRLAND_INSTANCE_SIGNATURE"
 ```
 
-同时从 Hyprland 配置中移除对应的 `screen_shader` 或 `source` 配置。
+如果旧用户副本与新版本不兼容，可以先备份，再让控制面板重新创建：
+
+```bash
+mv ~/.config/hyprland-crt-shader/crt.frag \
+   ~/.config/hyprland-crt-shader/crt.frag.backup
+hypr-crt-control
+```
+
+## 开发
+
+仓库结构、开发命令、UI/Shader 修改规则、CI 对齐、打包测试和贡献要求请阅读 [CONTRIBUTING.md](../CONTRIBUTING.md)。
 
 ## 许可证
 
-MIT
+MIT，详见 [LICENSE](../LICENSE)。
