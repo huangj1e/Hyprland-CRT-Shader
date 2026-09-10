@@ -17,8 +17,9 @@ source=('crt.frag'
         'ui-dir/ui/'
         'hyprland-crt-shader.lua'
         'hyprland-crt-shader.conf'
+        'hyprland-crt-control.desktop'
         'LICENSE')
-sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
 
 build() {
     export CARGO_TARGET_DIR="$srcdir/target"
@@ -30,7 +31,8 @@ package() {
         "$pkgdir/usr/share/hyprland-crt-shader/crt.frag"
     install -Dm755 "$srcdir/target/release/hyprland-crt-shader" \
         "$pkgdir/usr/bin/hypr-crt-control"
-    ln -s hypr-crt-control "$pkgdir/usr/bin/hypr-crt-toggle"
+    install -Dm644 "$srcdir/hyprland-crt-control.desktop" \
+        "$pkgdir/usr/share/applications/hyprland-crt-control.desktop"
     install -Dm644 "$srcdir/hyprland-crt-shader.lua" \
         "$pkgdir/usr/share/hyprland-crt-shader/hyprland-crt-shader.lua"
     install -Dm644 "$srcdir/hyprland-crt-shader.conf" \

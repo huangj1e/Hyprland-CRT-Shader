@@ -28,6 +28,7 @@ ln -s . "$build_dir/src-dir"
 ln -s . "$build_dir/ui-dir"
 cp "$root/config/hyprland-crt-shader.lua" "$build_dir/hyprland-crt-shader.lua"
 cp "$root/config/hyprland-crt-shader.conf" "$build_dir/hyprland-crt-shader.conf"
+cp "$root/packaging/hyprland-crt-control.desktop" "$build_dir/hyprland-crt-control.desktop"
 
 (
     cd "$build_dir"

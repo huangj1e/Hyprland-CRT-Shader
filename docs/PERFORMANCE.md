@@ -15,6 +15,6 @@ debug:damage_tracking = 0
 debug:vfr = false
 ```
 
-Continuous rendering can cost more power than the fragment math itself, particularly on laptops, high-refresh displays, 4K outputs, and multi-monitor setups. Use `hypr-crt-toggle` when the effect is not needed.
+Continuous rendering can cost more power than the fragment math itself, particularly on laptops, high-refresh displays, 4K outputs, and multi-monitor setups. Disable the effect from the control panel when it is not needed.
 
 When changing the shader, document any additional texture lookups or expensive operations in the pull request. Test text rendering, window animation, fullscreen content, idle power behavior, and all available output scales.

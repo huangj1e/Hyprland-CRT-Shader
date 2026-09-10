@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Hyprland CRT Shader Control
+Name[zh_CN]=Hyprland CRT Shader 控制面板
+Comment=Configure the Hyprland CRT screen shader
+Comment[zh_CN]=配置 Hyprland CRT 屏幕 Shader
+Exec=hypr-crt-control
+Icon=video-display
+Terminal=false
+Categories=Settings;DesktopSettings;
+Keywords=Hyprland;CRT;Shader;Display;
+StartupNotify=true

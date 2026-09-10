@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
-- Live Tk control panel for tuning shader parameters with debounced Hyprland recompilation.
+- Live Rust + Slint control panel for tuning shader parameters with debounced Hyprland recompilation.
 - Persistent per-user shader copy so pacman-managed files remain untouched.
 
 ## [1.0.0] - 2026-08-29
@@ -18,7 +18,7 @@ All notable changes to this project will be documented in this file. The format 
 - Periodic signal glitches, block noise, horizontal sync waves, and a rolling vertical-sync tear.
 - Resolution-aware physical-pixel parameters through `fullSize`.
 - Lua and legacy Hyprland configuration examples.
-- Temporary `hypr-crt-toggle` command with power-saving state restoration.
+- Native Rust + Slint graphical control panel with application-menu integration.
 - Arch Linux `PKGBUILD` and pacman package workflow.
 
 [Unreleased]: https://github.com/huangj1e/Hyprland-CRT-Shader/compare/v1.0.0...HEAD

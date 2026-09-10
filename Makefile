@@ -23,13 +23,14 @@ install:
 	cargo build --release --locked
 	install -Dm644 shaders/crt.frag "$(SHAREDIR)/crt.frag"
 	install -Dm755 target/release/hyprland-crt-shader "$(BINDIR)/hypr-crt-control"
-	ln -sf hypr-crt-control "$(BINDIR)/hypr-crt-toggle"
+	install -Dm644 packaging/hyprland-crt-control.desktop "$(DESTDIR)$(PREFIX)/share/applications/hyprland-crt-control.desktop"
 	install -Dm644 config/hyprland-crt-shader.lua "$(SHAREDIR)/hyprland-crt-shader.lua"
 	install -Dm644 config/hyprland-crt-shader.conf "$(SHAREDIR)/hyprland-crt-shader.conf"
 	install -Dm644 LICENSE "$(LICENSEDIR)/LICENSE"
 
 uninstall:
-	rm -f "$(BINDIR)/hypr-crt-toggle" "$(BINDIR)/hypr-crt-control"
+	rm -f "$(BINDIR)/hypr-crt-control"
+	rm -f "$(DESTDIR)$(PREFIX)/share/applications/hyprland-crt-control.desktop"
 	rm -rf "$(SHAREDIR)" "$(LICENSEDIR)"
 
 package:

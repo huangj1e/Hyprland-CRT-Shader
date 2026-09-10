@@ -153,17 +153,7 @@ To build the application directly from source:
 cargo build --release --locked
 ```
 
-The binary is written to `target/release/hyprland-crt-shader`; installation exposes it as both `hypr-crt-control` and `hypr-crt-toggle` (the latter selects CLI toggle mode from its executable name).
-
-## Temporary toggle
-
-Run from a terminal inside the Hyprland session:
-
-```bash
-hypr-crt-toggle
-```
-
-Run it once to disable the shader and again to enable it. While disabled, the command restores VFR and damage tracking to reduce idle GPU use. It does not edit your configuration, so `hyprctl reload` restores the configured default.
+The binary is written to `target/release/hyprland-crt-shader`. Installation adds `hypr-crt-control` and a desktop entry, so the panel can be launched from the application menu.
 
 ## Parameter tuning
 
@@ -205,7 +195,7 @@ debug:damage_tracking = 0
 debug:vfr = false
 ```
 
-This increases idle GPU use, especially at 4K or with multiple displays. The toggle command restores power-saving settings while the shader is off. If battery life matters more than animation, disable the shader or remove time-dependent effects and restore VFR/damage tracking.
+This increases idle GPU use, especially at 4K or with multiple displays. If battery life matters more than animation, disable the effect from the control panel or remove time-dependent effects and restore VFR/damage tracking.
 
 ## Recovery
 

@@ -127,17 +127,7 @@ Hyprland Screen Shader 当前不能直接接收任意用户 uniform，因此面�
 cargo build --release --locked
 ```
 
-生成的二进制位于 `target/release/hyprland-crt-shader`，安装后同时提供 `hypr-crt-control` 图形控制面板和 `hypr-crt-toggle` 命令行临时开关。
-
-## 临时开关
-
-安装后可以在 Hyprland 终端中直接执行：
-
-```bash
-hypr-crt-toggle
-```
-
-执行一次关闭，再执行一次开启。关闭时会恢复 VFR 和 damage tracking，减少静止桌面功耗。脚本不会修改配置文件，因此 `hyprctl reload` 会恢复配置文件中的默认状态。
+生成的二进制位于 `target/release/hyprland-crt-shader`。安装后会提供 `hypr-crt-control` 以及桌面应用入口，可以直接从应用程序菜单启动控制面板。
 
 ## 调节参数
 
@@ -179,7 +169,7 @@ debug:damage_tracking = 0
 debug:vfr = false
 ```
 
-这会提高静止桌面的 GPU 使用和笔记本功耗，4K、多显示器环境更加明显。暂时不需要时建议运行 `hypr-crt-toggle` 关闭。
+这会提高静止桌面的 GPU 使用和笔记本功耗，4K、多显示器环境更加明显。暂时不需要时可以在控制面板中关闭效果。
 
 ## 故障恢复
 

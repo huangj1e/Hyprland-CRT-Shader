@@ -535,46 +535,9 @@ thread_local! {
     static APP_WEAK: std::cell::RefCell<slint::Weak<AppWindow>> = Default::default();
 }
 
-fn run_toggle() -> Result<(), String> {
-    if env::var_os("HYPRLAND_INSTANCE_SIGNATURE").is_none() {
-        return Err("not running inside a Hyprland session".into());
-    }
-    let enabled = detect_enabled();
-    let shader = source_shader()?;
-    set_effect(!enabled, &shader)?;
-    let state = if enabled { "OFF" } else { "ON" };
-    println!("CRT Shader: {state} (temporary)");
-    let color = if enabled {
-        "rgb(88cc88)"
-    } else {
-        "rgb(88aaff)"
-    };
-    let _ = hyprctl(&[
-        "notify",
-        "2",
-        "2500",
-        color,
-        &format!("CRT Shader: {state}"),
-    ]);
-    Ok(())
-}
-
 fn main() {
-    let toggle = env::args_os()
-        .next()
-        .and_then(|p| PathBuf::from(p).file_name().map(|n| n.to_owned()))
-        .map(|name| name == "hypr-crt-toggle")
-        .unwrap_or(false);
-    let result = if toggle { run_toggle() } else { run() };
-    if let Err(error) = result {
-        eprintln!(
-            "{}: {error}",
-            if toggle {
-                "hypr-crt-toggle"
-            } else {
-                "hypr-crt-control"
-            }
-        );
+    if let Err(error) = run() {
+        eprintln!("hyprland-crt-shader: {error}");
         std::process::exit(1);
     }
 }
