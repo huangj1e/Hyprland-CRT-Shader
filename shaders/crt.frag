@@ -68,7 +68,8 @@ const float SCANLINE_STRENGTH     = 0.070; // 细扫描线强度。
 const float RGB_MASK_STRENGTH     = 0.025; // RGB 荧光粉子像素强度。
 const float VIGNETTE_STRENGTH     = 0.180; // 四角暗角强度。
 const float FLICKER_STRENGTH      = 0.006; // 很轻的整体亮度闪烁。
-const float OVERSCAN              = -0.030;// 正数裁边，0 关闭，负数会缩小画面露出黑边。
+const float SCREEN_SCALE_X        = 1.064; // 横向画面缩放；1.0 原始大小，小于 1.0 缩小。
+const float SCREEN_SCALE_Y        = 1.064; // 纵向画面缩放；可与横向独立调节。
 const float EDGE_SOFTNESS         = 1.50;  // 管面边缘软化宽度，单位：像素。
 
 // ----------------------------------------------------------------------------
@@ -136,7 +137,8 @@ void main() {
     float r2 = dot(radial, radial);
     p *= 1.0 + CURVATURE * r2;
     vec2 uv = p * 0.5 + 0.5;
-    uv = (uv - 0.5) * (1.0 + 2.0 * OVERSCAN) + 0.5;
+    // 横向和纵向独立缩放；大于 1.0 放大，小于 1.0 缩小并露出边缘。
+    uv = (uv - 0.5) / max(vec2(SCREEN_SCALE_X, SCREEN_SCALE_Y), vec2(0.001)) + 0.5;
     uv += shake;
     uv.x += (rgbWavePixels + tearShiftPixels) * pixel.x;
 

@@ -5,7 +5,7 @@ Version 1.1.0 delivers the native live-control workflow and a refined multilingu
 ## Highlights
 
 - Native Rust + Slint control panel; Python and Tk are not required at runtime
-- Live tuning for glitch timing, shake, waves, rolling tears, RGB separation, noise, and CRT display parameters
+- Live tuning for glitch timing, shake, waves, rolling tears, RGB separation, noise, CRT display parameters, and independent horizontal/vertical scaling
 - 180 ms debounced live preview to avoid recompiling on every raw pointer event
 - Persistent user shader at `${XDG_CONFIG_HOME:-$HOME/.config}/hyprland-crt-shader/crt.frag`
 - Automatically generated Hyprland include so UI changes survive reloads, restarts, and login

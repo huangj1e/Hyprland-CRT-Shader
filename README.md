@@ -13,6 +13,7 @@ A single-pass CRT / analog-TV screen shader for Hyprland, with a native Rust + S
 - CRT barrel curvature, soft tube edges, scanlines, RGB phosphor mask, vignette, and flicker
 - Analog white noise, horizontal interference, chromatic aberration, and RGB separation
 - Screen shake, horizontal sync waves, block noise, periodic signal failures, and a rolling sync tear
+- Independent horizontal and vertical image scaling
 - Resolution-aware pixel displacement through Hyprland's `fullSize` uniform
 - Native graphical control panel with 180 ms debounced live preview
 - Persistent per-user shader copy; package-managed files are not edited by the panel

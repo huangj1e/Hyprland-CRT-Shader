@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Added
+
+- Independent horizontal and vertical image-scale controls, including automatic migration from the former single overscan value.
+
 ### Fixed
 
 - Persist control-panel shader values and enabled state across Hyprland reloads, restarts, and login by generating a user configuration include.

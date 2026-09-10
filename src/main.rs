@@ -331,10 +331,28 @@ const PARAMETERS: &[Parameter] = &[
         group: 4,
     },
     Parameter {
-        key: "OVERSCAN",
-        labels: ["画面裁边/缩小", "Overscan", "オーバースキャン", "오버스캔"],
-        min: -0.10,
-        max: 0.10,
+        key: "SCREEN_SCALE_X",
+        labels: [
+            "横向画面缩放",
+            "Horizontal scale",
+            "水平スケール",
+            "가로 화면 배율",
+        ],
+        min: 0.80,
+        max: 1.20,
+        step: 0.002,
+        group: 4,
+    },
+    Parameter {
+        key: "SCREEN_SCALE_Y",
+        labels: [
+            "纵向画面缩放",
+            "Vertical scale",
+            "垂直スケール",
+            "세로 화면 배율",
+        ],
+        min: 0.80,
+        max: 1.20,
         step: 0.002,
         group: 4,
     },
@@ -376,8 +394,35 @@ fn ensure_user_shader(source: &Path, user: &Path) -> Result<(), String> {
     fs::create_dir_all(user.parent().unwrap()).map_err(|e| e.to_string())?;
     if !user.exists() {
         fs::copy(source, user).map_err(|e| e.to_string())?;
+        return Ok(());
     }
-    Ok(())
+
+    let old_text = fs::read_to_string(user).map_err(|e| e.to_string())?;
+    if PARAMETERS
+        .iter()
+        .all(|parameter| find_value(&old_text, parameter.key).is_ok())
+    {
+        return Ok(());
+    }
+
+    // Upgrade an older panel-managed shader to the installed template while
+    // retaining every parameter that still exists. Convert the former single
+    // overscan value to equivalent independent X/Y scale values.
+    let mut upgraded = fs::read_to_string(source).map_err(|e| e.to_string())?;
+    let old_overscan = find_value(&old_text, "OVERSCAN").ok();
+    for parameter in PARAMETERS {
+        let value = find_value(&old_text, parameter.key).ok().or_else(|| {
+            if matches!(parameter.key, "SCREEN_SCALE_X" | "SCREEN_SCALE_Y") {
+                old_overscan.map(|overscan| 1.0 / (1.0 + 2.0 * overscan).max(0.001))
+            } else {
+                None
+            }
+        });
+        if let Some(value) = value {
+            replace_value(&mut upgraded, parameter.key, value)?;
+        }
+    }
+    write_shader_text(user, &upgraded)
 }
 
 fn find_value(text: &str, key: &str) -> Result<f32, String> {
@@ -421,11 +466,7 @@ fn replace_value(text: &mut String, key: &str, value: f32) -> Result<(), String>
     Ok(())
 }
 
-fn write_values(path: &Path, values: &[f32]) -> Result<(), String> {
-    let mut text = fs::read_to_string(path).map_err(|e| e.to_string())?;
-    for (parameter, value) in PARAMETERS.iter().zip(values) {
-        replace_value(&mut text, parameter.key, *value)?;
-    }
+fn write_shader_text(path: &Path, text: &str) -> Result<(), String> {
     let temporary = path.with_extension(format!("frag.{}.tmp", std::process::id()));
     let result = (|| -> io::Result<()> {
         let mut file = fs::File::create(&temporary)?;
@@ -437,6 +478,14 @@ fn write_values(path: &Path, values: &[f32]) -> Result<(), String> {
         let _ = fs::remove_file(&temporary);
     }
     result.map_err(|e| e.to_string())
+}
+
+fn write_values(path: &Path, values: &[f32]) -> Result<(), String> {
+    let mut text = fs::read_to_string(path).map_err(|e| e.to_string())?;
+    for (parameter, value) in PARAMETERS.iter().zip(values) {
+        replace_value(&mut text, parameter.key, *value)?;
+    }
+    write_shader_text(path, &text)
 }
 
 fn hyprctl(args: &[&str]) -> Result<Output, String> {
