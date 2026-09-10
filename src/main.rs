@@ -1,4 +1,4 @@
-use slint::{Model, ModelRc, SharedString, VecModel};
+use slint::{Color, Model, ModelRc, SharedString, VecModel};
 use std::{
     env, fs,
     io::{self, Write},
@@ -21,27 +21,79 @@ const SYSTEM_SHADERS: &[&str] = &[
 #[derive(Clone, Copy)]
 struct Parameter {
     key: &'static str,
-    label: &'static str,
-    hint: &'static str,
+    labels: [&'static str; 4],
+    hints: [&'static str; 4],
     min: f32,
     max: f32,
     step: f32,
     group: i32,
 }
 
-const GROUPS: &[&str] = &[
-    "信号故障 / Signal glitch",
-    "抖动与波浪 / Shake and waves",
-    "滚动同步撕裂 / Rolling sync tear",
-    "RGB 与噪声 / RGB and noise",
-    "CRT 显示 / CRT display",
+const LANGUAGES: &[&str] = &["中文", "English", "日本語", "한국어"];
+const GROUPS: [[&str; 4]; 5] = [
+    ["信号故障", "Signal glitch", "信号グリッチ", "신호 글리치"],
+    [
+        "抖动与波浪",
+        "Shake and waves",
+        "揺れと波形",
+        "흔들림과 파동",
+    ],
+    [
+        "滚动同步撕裂",
+        "Rolling sync tear",
+        "ローリング同期",
+        "롤링 동기 찢김",
+    ],
+    ["RGB 与噪声", "RGB and noise", "RGBとノイズ", "RGB와 노이즈"],
+    ["CRT 显示", "CRT display", "CRT表示", "CRT 디스플레이"],
+];
+const UI_TEXT: [[&str; 4]; 9] = [
+    [
+        "Hyprland CRT Shader 控制面板",
+        "Hyprland CRT Shader Control",
+        "Hyprland CRT Shader コントロール",
+        "Hyprland CRT Shader 제어판",
+    ],
+    ["语言", "Language", "言語", "언어"],
+    [
+        "实时预览",
+        "Live preview",
+        "ライブプレビュー",
+        "실시간 미리보기",
+    ],
+    ["启用效果", "Effect enabled", "エフェクト有効", "효과 사용"],
+    [
+        "修改用户 Shader 副本；实时预览会在短暂防抖后重新编译。",
+        "Edit the user shader copy; live preview recompiles after a short debounce.",
+        "ユーザー用Shaderを編集し、短い待機後に再コンパイルします。",
+        "사용자 Shader를 편집하며 짧은 지연 후 다시 컴파일합니다.",
+    ],
+    ["立即应用", "Apply now", "今すぐ適用", "지금 적용"],
+    [
+        "恢复默认",
+        "Reset defaults",
+        "デフォルトに戻す",
+        "기본값 복원",
+    ],
+    [
+        "打开 Shader 目录",
+        "Open Shader folder",
+        "Shaderフォルダーを開く",
+        "Shader 폴더 열기",
+    ],
+    [
+        "Ctrl+R：恢复默认参数　Ctrl+Shift+E：紧急关闭特效",
+        "Ctrl+R: reset defaults   Ctrl+Shift+E: emergency disable",
+        "Ctrl+R：デフォルト　Ctrl+Shift+E：緊急無効化",
+        "Ctrl+R: 기본값　Ctrl+Shift+E: 긴급 비활성화",
+    ],
 ];
 
 const PARAMETERS: &[Parameter] = &[
     Parameter {
         key: "GLITCH_INTERVAL",
-        label: "故障周期",
-        hint: "Interval",
+        labels: ["故障周期", "Glitch interval", "グリッチ間隔", "글리치 간격"],
+        hints: ["故障周期", "Glitch interval", "間隔", "간격"],
         min: 1.0,
         max: 120.0,
         step: 0.5,
@@ -49,8 +101,13 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "GLITCH_DURATION",
-        label: "故障持续时间",
-        hint: "Duration",
+        labels: [
+            "故障持续时间",
+            "Glitch duration",
+            "グリッチ持続時間",
+            "글리치 지속 시간",
+        ],
+        hints: ["持续时间", "Duration", "持続時間", "지속 시간"],
         min: 0.05,
         max: 3.0,
         step: 0.05,
@@ -58,8 +115,13 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "GLITCH_POWER",
-        label: "周期性故障强度",
-        hint: "Power",
+        labels: [
+            "周期性故障强度",
+            "Glitch power",
+            "グリッチ強度",
+            "글리치 강도",
+        ],
+        hints: ["故障强度", "Power", "強度", "강도"],
         min: 0.0,
         max: 1.5,
         step: 0.01,
@@ -67,8 +129,13 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "BASE_GLITCH",
-        label: "常态信号不稳",
-        hint: "Base instability",
+        labels: [
+            "常态信号不稳",
+            "Base instability",
+            "基本信号の不安定さ",
+            "기본 신호 불안정",
+        ],
+        hints: ["常态不稳", "Base instability", "基本不安定", "기본 불안정"],
         min: 0.0,
         max: 0.6,
         step: 0.01,
@@ -76,8 +143,13 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "SHAKE_BASE_PIXELS",
-        label: "常态抖动像素",
-        hint: "Idle shake",
+        labels: [
+            "常态抖动像素",
+            "Idle shake",
+            "常態シェイク",
+            "평상시 흔들림",
+        ],
+        hints: ["常态抖动", "Idle shake", "常態シェイク", "평상시 흔들림"],
         min: 0.0,
         max: 4.0,
         step: 0.05,
@@ -85,8 +157,13 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "SHAKE_GLITCH_PIXELS",
-        label: "故障抖动像素",
-        hint: "Glitch shake",
+        labels: [
+            "故障抖动像素",
+            "Glitch shake",
+            "グリッチシェイク",
+            "글리치 흔들림",
+        ],
+        hints: ["故障抖动", "Glitch shake", "グリッチ", "글리치"],
         min: 0.0,
         max: 20.0,
         step: 0.1,
@@ -94,8 +171,8 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "WAVE_BASE_PIXELS",
-        label: "常态水平波纹",
-        hint: "Idle wave",
+        labels: ["常态水平波纹", "Idle wave", "常態波形", "평상시 파동"],
+        hints: ["常态波纹", "Idle wave", "常態波形", "평상시 파동"],
         min: 0.0,
         max: 5.0,
         step: 0.05,
@@ -103,8 +180,8 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "WAVE_GLITCH_PIXELS",
-        label: "故障水平波纹",
-        hint: "Glitch wave",
+        labels: ["故障水平波纹", "Glitch wave", "グリッチ波形", "글리치 파동"],
+        hints: ["故障波纹", "Glitch wave", "グリッチ", "글리치"],
         min: 0.0,
         max: 30.0,
         step: 0.1,
@@ -112,8 +189,13 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "ROLLING_TEAR_STRENGTH",
-        label: "滚动撕裂强度",
-        hint: "Strength",
+        labels: [
+            "滚动撕裂强度",
+            "Rolling tear strength",
+            "ローリング強度",
+            "롤링 찢김 강도",
+        ],
+        hints: ["撕裂强度", "Strength", "強度", "강도"],
         min: 0.0,
         max: 2.0,
         step: 0.01,
@@ -121,8 +203,8 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "ROLLING_TEAR_WIDTH",
-        label: "撕裂带高度比例",
-        hint: "Width",
+        labels: ["撕裂带高度比例", "Tear band width", "ティア幅", "찢김 폭"],
+        hints: ["高度比例", "Width", "幅", "폭"],
         min: 0.005,
         max: 0.30,
         step: 0.005,
@@ -130,8 +212,13 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "ROLLING_TEAR_SPEED",
-        label: "向下滚动速度",
-        hint: "Speed",
+        labels: [
+            "向下滚动速度",
+            "Rolling speed",
+            "スクロール速度",
+            "롤링 속도",
+        ],
+        hints: ["滚动速度", "Speed", "速度", "속도"],
         min: 0.0,
         max: 2.0,
         step: 0.01,
@@ -139,8 +226,8 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "ROLLING_TEAR_PIXELS",
-        label: "撕裂水平错位",
-        hint: "Displacement",
+        labels: ["撕裂水平错位", "Tear displacement", "水平ずれ", "수평 변위"],
+        hints: ["水平错位", "Displacement", "ずれ", "변위"],
         min: 0.0,
         max: 50.0,
         step: 0.25,
@@ -148,8 +235,13 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "RGB_SHIFT_BASE_PIXELS",
-        label: "常态 RGB 分离",
-        hint: "Idle RGB shift",
+        labels: [
+            "常态 RGB 分离",
+            "Idle RGB shift",
+            "常態RGBずれ",
+            "평상시 RGB 분리",
+        ],
+        hints: ["常态分离", "Idle RGB shift", "常態RGB", "평상시 RGB"],
         min: 0.0,
         max: 8.0,
         step: 0.05,
@@ -157,8 +249,13 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "RGB_SHIFT_GLITCH",
-        label: "故障 RGB 分离",
-        hint: "Glitch RGB shift",
+        labels: [
+            "故障 RGB 分离",
+            "Glitch RGB shift",
+            "グリッチRGBずれ",
+            "글리치 RGB 분리",
+        ],
+        hints: ["故障分离", "Glitch RGB shift", "グリッチRGB", "글리치 RGB"],
         min: 0.0,
         max: 40.0,
         step: 0.25,
@@ -166,8 +263,13 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "BLOCK_NOISE_STRENGTH",
-        label: "块状噪声强度",
-        hint: "Block noise",
+        labels: [
+            "块状噪声强度",
+            "Block noise",
+            "ブロックノイズ",
+            "블록 노이즈",
+        ],
+        hints: ["块噪声", "Block noise", "ブロック", "블록"],
         min: 0.0,
         max: 1.0,
         step: 0.01,
@@ -175,8 +277,13 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "WHITE_NOISE_STRENGTH",
-        label: "白噪点强度",
-        hint: "White noise",
+        labels: [
+            "白噪点强度",
+            "White noise",
+            "ホワイトノイズ",
+            "화이트 노이즈",
+        ],
+        hints: ["白噪点", "White noise", "白ノイズ", "화이트"],
         min: 0.0,
         max: 0.30,
         step: 0.005,
@@ -184,8 +291,13 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "HORIZONTAL_LINE",
-        label: "高频水平暗纹",
-        hint: "Horizontal noise",
+        labels: [
+            "高频水平暗纹",
+            "Horizontal noise",
+            "水平ノイズ",
+            "수평 노이즈",
+        ],
+        hints: ["水平暗纹", "Horizontal noise", "水平ノイズ", "수평"],
         min: 0.0,
         max: 0.30,
         step: 0.005,
@@ -193,8 +305,8 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "CURVATURE",
-        label: "屏幕曲率",
-        hint: "Curvature",
+        labels: ["屏幕曲率", "Curvature", "曲率", "곡률"],
+        hints: ["曲率", "Curvature", "曲率", "곡률"],
         min: 0.0,
         max: 0.20,
         step: 0.005,
@@ -202,8 +314,8 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "SCANLINE_STRENGTH",
-        label: "扫描线强度",
-        hint: "Scanlines",
+        labels: ["扫描线强度", "Scanline strength", "走査線", "스캔라인"],
+        hints: ["扫描线", "Scanlines", "走査線", "스캔라인"],
         min: 0.0,
         max: 0.40,
         step: 0.005,
@@ -211,8 +323,13 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "RGB_MASK_STRENGTH",
-        label: "RGB 荧光粉强度",
-        hint: "Phosphor mask",
+        labels: [
+            "RGB 荧光粉强度",
+            "Phosphor mask",
+            "RGBマスク",
+            "RGB 인광 마스크",
+        ],
+        hints: ["荧光粉", "Phosphor mask", "RGBマスク", "인광 마스크"],
         min: 0.0,
         max: 0.30,
         step: 0.005,
@@ -220,8 +337,8 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "VIGNETTE_STRENGTH",
-        label: "暗角强度",
-        hint: "Vignette",
+        labels: ["暗角强度", "Vignette", "ビネット", "비네트"],
+        hints: ["暗角", "Vignette", "ビネット", "비네트"],
         min: 0.0,
         max: 0.70,
         step: 0.01,
@@ -229,8 +346,8 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "FLICKER_STRENGTH",
-        label: "亮度闪烁",
-        hint: "Flicker",
+        labels: ["亮度闪烁", "Flicker", "ちらつき", "플리커"],
+        hints: ["闪烁", "Flicker", "ちらつき", "플리커"],
         min: 0.0,
         max: 0.08,
         step: 0.001,
@@ -238,8 +355,8 @@ const PARAMETERS: &[Parameter] = &[
     },
     Parameter {
         key: "OVERSCAN",
-        label: "画面裁边/缩小",
-        hint: "Overscan",
+        labels: ["画面裁边/缩小", "Overscan", "オーバースキャン", "오버스캔"],
+        hints: ["裁边/缩小", "Overscan", "オーバースキャン", "오버스캔"],
         min: -0.10,
         max: 0.10,
         step: 0.002,
@@ -393,6 +510,101 @@ fn apply(window: &AppWindow, user_shader: &Path) -> Result<(), String> {
     Ok(())
 }
 
+fn parse_color(value: &str, fallback: Color) -> Color {
+    let hex = value.trim().trim_start_matches('#');
+    if hex.len() != 6 {
+        return fallback;
+    }
+    u32::from_str_radix(hex, 16)
+        .ok()
+        .map(|rgb| Color::from_rgb_u8((rgb >> 16) as u8, (rgb >> 8) as u8, rgb as u8))
+        .unwrap_or(fallback)
+}
+
+fn omarchy_colors() -> (Color, Color, Color, Color, Color) {
+    let defaults = ["#8dc7ff", "#11151c", "#202936", "#eef4ff", "#9daabe"];
+    let mut values = defaults.map(str::to_owned);
+    if let Some(home) = env::var_os("HOME") {
+        let path = PathBuf::from(home).join(".local/state/omarchy/current/theme/colors.toml");
+        if let Ok(text) = fs::read_to_string(path) {
+            for line in text.lines() {
+                let Some((key, rest)) = line.split_once('=') else {
+                    continue;
+                };
+                let value = rest
+                    .split('"')
+                    .nth(1)
+                    .or_else(|| rest.split_whitespace().next())
+                    .unwrap_or("");
+                let slot = match key.trim() {
+                    "accent" => Some(0),
+                    "background" => Some(1),
+                    "foreground" => Some(3),
+                    "color8" => Some(4),
+                    _ => None,
+                };
+                if let Some(slot) = slot {
+                    values[slot] = value.to_owned();
+                }
+            }
+        }
+    }
+    if let Ok(accent) = env::var("OMARCHY_ACCENT") {
+        values[0] = accent;
+    }
+    let colors = values
+        .iter()
+        .zip(defaults)
+        .map(|(value, fallback)| parse_color(value, parse_color(fallback, Color::default())))
+        .collect::<Vec<_>>();
+    (
+        colors[0],
+        colors[1],
+        colors[1].brighter(0.08),
+        colors[3],
+        colors[4],
+    )
+}
+
+fn apply_theme(window: &AppWindow) {
+    let (accent, background, panel, text, muted) = omarchy_colors();
+    window.set_accent_color(accent);
+    window.set_window_background(background);
+    window.set_panel_color(panel);
+    window.set_text_color(text);
+    window.set_muted_color(muted);
+}
+
+fn localized_text(index: usize, language: usize) -> SharedString {
+    UI_TEXT[index][language.min(3)].into()
+}
+
+fn update_language(window: &AppWindow, language: usize) {
+    let language = language.min(3);
+    window.set_language_index(language as i32);
+    window.set_window_title(localized_text(0, language));
+    window.set_language_label(localized_text(1, language));
+    window.set_live_preview_label(localized_text(2, language));
+    window.set_enabled_label(localized_text(3, language));
+    window.set_description_text(localized_text(4, language));
+    window.set_apply_label(localized_text(5, language));
+    window.set_reset_label(localized_text(6, language));
+    window.set_folder_label(localized_text(7, language));
+    window.set_shortcut_label(localized_text(8, language));
+    window.set_group_titles(ModelRc::new(VecModel::from(
+        GROUPS
+            .iter()
+            .map(|group| group[language].into())
+            .collect::<Vec<SharedString>>(),
+    )));
+    window.set_parameter_labels(ModelRc::new(VecModel::from(
+        PARAMETERS
+            .iter()
+            .map(|p| format!("{}  {}", p.labels[language], p.hints[language]).into())
+            .collect::<Vec<SharedString>>(),
+    )));
+}
+
 fn set_status(window: &slint::Weak<AppWindow>, message: &str) {
     if let Some(window) = window.upgrade() {
         window.set_status_text(message.into());
@@ -411,16 +623,10 @@ fn run() -> Result<(), String> {
     let values = read_values(&user_shader)?;
 
     let window = AppWindow::new().map_err(|e| e.to_string())?;
-    window.set_group_titles(ModelRc::new(VecModel::from(
-        GROUPS
+    window.set_languages(ModelRc::new(VecModel::from(
+        LANGUAGES
             .iter()
-            .map(|s| SharedString::from(*s))
-            .collect::<Vec<_>>(),
-    )));
-    window.set_parameter_labels(ModelRc::new(VecModel::from(
-        PARAMETERS
-            .iter()
-            .map(|p| format!("{}  {}", p.label, p.hint).into())
+            .map(|s| (*s).into())
             .collect::<Vec<SharedString>>(),
     )));
     window.set_parameter_minimums(ModelRc::new(VecModel::from(
@@ -434,6 +640,31 @@ fn run() -> Result<(), String> {
     )));
     window.set_parameter_values(ModelRc::new(VecModel::from(values)));
     window.set_effect_enabled(detect_enabled());
+    window.set_live_preview(true);
+    apply_theme(&window);
+    let theme_path = env::var_os("HOME")
+        .map(|home| PathBuf::from(home).join(".local/state/omarchy/current/theme/colors.toml"));
+    let theme_weak = window.as_weak();
+    thread::spawn(move || {
+        let mut last_modified = None;
+        loop {
+            let modified = theme_path
+                .as_ref()
+                .and_then(|path| fs::metadata(path).ok())
+                .and_then(|metadata| metadata.modified().ok());
+            if modified.is_some() && modified != last_modified {
+                last_modified = modified;
+                let weak = theme_weak.clone();
+                let _ = slint::invoke_from_event_loop(move || {
+                    if let Some(window) = weak.upgrade() {
+                        apply_theme(&window);
+                    }
+                });
+            }
+            thread::sleep(Duration::from_secs(1));
+        }
+    });
+    update_language(&window, 1);
 
     let (debounce_tx, debounce_rx) = mpsc::channel::<u64>();
     thread::spawn(move || {
@@ -454,6 +685,15 @@ fn run() -> Result<(), String> {
     let weak = window.as_weak();
     let tx = debounce_tx.clone();
     let generation_for_change = generation.clone();
+    window.on_language_changed({
+        let weak = window.as_weak();
+        move |index| {
+            if let Some(window) = weak.upgrade() {
+                update_language(&window, index as usize);
+            }
+        }
+    });
+
     window.on_parameter_changed(move |index, raw| {
         let Some(window) = weak.upgrade() else {
             return;
@@ -517,6 +757,17 @@ fn run() -> Result<(), String> {
         match apply(&window, &path) {
             Ok(()) => window.set_status_text("已恢复默认 / Defaults restored".into()),
             Err(error) => window.set_status_text(format!("恢复失败: {error}").into()),
+        }
+    });
+
+    let weak = window.as_weak();
+    let path = user_shader.clone();
+    window.on_emergency_disable(move || {
+        if let Err(error) = set_effect(false, &path) {
+            set_status(&weak, &format!("Emergency disable failed: {error}"));
+        } else if let Some(window) = weak.upgrade() {
+            window.set_effect_enabled(false);
+            window.set_status_text("Effect disabled / 特效已关闭".into());
         }
     });
 

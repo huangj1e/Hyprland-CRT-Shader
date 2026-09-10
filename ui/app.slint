@@ -1,16 +1,108 @@
-import { Button, CheckBox, ScrollView, Slider } from "std-widgets.slint";
+import { ScrollView } from "std-widgets.slint";
+
+component ThemeButton inherits Rectangle {
+    in property <string> text;
+    in property <color> accent;
+    in property <color> foreground;
+    in property <color> surface;
+    callback clicked;
+    height: 32px;
+    min-width: button-text.preferred-width + 28px;
+    preferred-width: button-text.preferred-width + 28px;
+    border-radius: 6px;
+    background: touch.pressed ? accent : surface;
+    border-width: 1px;
+    border-color: accent;
+    property <bool> pressed: touch.pressed;
+    button-text := Text {
+        x: 14px;
+        width: parent.width - 28px;
+        text: root.text;
+        color: root.pressed ? #ffffff : root.foreground;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+component ThemeToggle inherits Rectangle {
+    in property <string> text;
+    in property <color> accent;
+    in property <color> foreground;
+    in property <color> surface;
+    in property <color> selected-foreground;
+    in-out property <bool> checked;
+    callback toggled(bool);
+    height: 32px;
+    min-width: toggle-text.preferred-width + 28px;
+    preferred-width: toggle-text.preferred-width + 28px;
+    border-radius: 6px;
+    background: checked ? accent : surface;
+    border-width: 1px;
+    border-color: accent;
+    toggle-text := Text {
+        x: 14px;
+        width: parent.width - 28px;
+        text: root.text;
+        color: root.checked ? root.selected-foreground : root.foreground;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    touch := TouchArea { clicked => { root.checked = !root.checked; root.toggled(root.checked); } }
+}
+
+component ThemeSlider inherits Rectangle {
+    in property <float> value;
+    in property <float> minimum;
+    in property <float> maximum;
+    in property <color> accent;
+    in property <color> track-color;
+    callback changed(float);
+    height: 24px;
+    min-width: 120px;
+    horizontal-stretch: 1;
+    Rectangle { y: 10px; height: 4px; width: parent.width; background: root.track-color; border-radius: 2px; }
+    Rectangle {
+        y: 8px;
+        width: 8px;
+        height: 8px;
+        x: max(0px, min(parent.width - 8px, (root.value - root.minimum) / max(0.0001, root.maximum - root.minimum) * (parent.width - 8px)));
+        background: root.accent;
+        border-radius: 4px;
+    }
+    touch := TouchArea {
+        moved => { root.changed(root.minimum + max(0px, min(self.mouse-x, parent.width)) / parent.width * (root.maximum - root.minimum)); }
+        clicked => { root.changed(root.minimum + max(0px, min(self.mouse-x, parent.width)) / parent.width * (root.maximum - root.minimum)); }
+    }
+}
 
 export component AppWindow inherits Window {
-    title: "Hyprland CRT Shader Control";
-    preferred-width: 780px;
-    preferred-height: 760px;
-    min-width: 680px;
-    min-height: 520px;
-    background: #11151c;
+    title: window-title;
+    preferred-width: 720px;
+    preferred-height: 650px;
+    min-width: 620px;
+    min-height: 480px;
+    background: window-background;
 
+    in property <string> window-title: "Hyprland CRT Shader Control";
+    in property <string> description-text;
+    in property <string> language-label;
+    in property <string> live-preview-label;
+    in property <string> enabled-label;
+    in property <string> apply-label;
+    in property <string> reset-label;
+    in property <string> folder-label;
+    in property <string> shortcut-label;
+    in property <color> accent-color: #8dc7ff;
+    in property <color> window-background: #11151c;
+    in property <color> panel-color: #202936;
+    in property <color> text-color: #eef4ff;
+    in property <color> muted-color: #9daabe;
     in-out property <bool> effect-enabled: true;
     in-out property <bool> live-preview: true;
-    in-out property <string> status-text: "Ready / 就绪";
+    in-out property <string> status-text;
+    in-out property <int> language-index: 1;
+    in property <[string]> languages;
     in property <[string]> group-titles;
     in property <[string]> parameter-labels;
     in property <[float]> parameter-values;
@@ -23,89 +115,67 @@ export component AppWindow inherits Window {
     callback apply-now();
     callback reset-defaults();
     callback open-folder();
+    callback emergency-disable();
+    callback language-changed(int);
 
-    VerticalLayout {
-        padding: 14px;
-        spacing: 10px;
+    changed language-index => { root.language-changed(root.language-index); }
 
-        HorizontalLayout {
-            Text {
-                text: "CRT Shader Control Panel";
-                color: #eef4ff;
-                font-size: 22px;
-                font-weight: 700;
-                vertical-alignment: center;
-            }
-            Rectangle { horizontal-stretch: 1; }
-            CheckBox { text: "实时预览"; checked <=> root.live-preview; }
-            CheckBox {
-                text: "启用效果";
-                checked: root.effect-enabled;
-                toggled => {
-                    root.effect-enabled = self.checked;
-                    root.toggle-effect(self.checked);
-                }
-            }
+    FocusScope {
+        x: 0px; y: 0px; width: parent.width; height: parent.height; enabled: true;
+        init => { self.focus(); }
+        key-pressed(event) => {
+            if event.modifiers.control && (event.text == "r" || event.text == "R") { root.reset-defaults(); accept; }
+            if event.modifiers.control && event.modifiers.shift && (event.text == "e" || event.text == "E") { root.emergency-disable(); accept; }
+            reject;
         }
-
-        Text {
-            text: "修改用户 Shader 副本；实时预览会在短暂防抖后重新编译。";
-            color: #9daabe;
-            font-size: 13px;
-        }
-
-        ScrollView {
-            vertical-stretch: 1;
-            VerticalLayout {
-                spacing: 8px;
-                for title[i] in root.group-titles: VerticalLayout {
-                    spacing: 5px;
-                    Rectangle {
-                        height: 31px;
-                        background: #202936;
-                        border-radius: 5px;
-                        Text {
-                            x: 9px;
-                            text: title;
-                            color: #8dc7ff;
-                            font-size: 15px;
-                            font-weight: 700;
-                            vertical-alignment: center;
+        VerticalLayout {
+            padding: 16px;
+            spacing: 9px;
+            HorizontalLayout {
+                Text { text: root.window-title; color: root.text-color; font-size: 20px; font-weight: 700; vertical-alignment: center; }
+                Rectangle { horizontal-stretch: 1; }
+                Text { text: root.language-label; color: root.muted-color; vertical-alignment: center; }
+                ThemeButton { text: root.languages[root.language-index]; accent: root.accent-color; foreground: root.text-color; surface: root.panel-color; width: 96px; clicked => { root.language-changed(Math.mod(root.language-index + 1, 4)); } }
+            }
+            HorizontalLayout {
+                spacing: 10px;
+                ThemeToggle { text: root.live-preview-label; accent: root.accent-color; foreground: root.text-color; surface: root.panel-color; selected-foreground: root.window-background; checked <=> root.live-preview; }
+                ThemeToggle { text: root.enabled-label; accent: root.accent-color; foreground: root.text-color; surface: root.panel-color; selected-foreground: root.window-background; checked: root.effect-enabled; toggled(value) => { root.effect-enabled = value; root.toggle-effect(value); } }
+                Rectangle { horizontal-stretch: 1; }
+            }
+            Text { text: root.description-text; color: root.muted-color; font-size: 12px; }
+            Text { text: root.shortcut-label; color: root.accent-color; font-size: 11px; }
+            ScrollView {
+                vertical-stretch: 1;
+                VerticalLayout {
+                    padding-right: 10px;
+                    spacing: 8px;
+                    for title[i] in root.group-titles: VerticalLayout {
+                        spacing: 5px;
+                        Rectangle {
+                            height: 27px;
+                            background: root.panel-color;
+                            border-radius: 5px;
+                            Text { x: 10px; width: parent.width - 20px; text: title; color: root.accent-color; font-size: 12px; font-weight: 700; vertical-alignment: center; }
                         }
-                    }
-                    for label[j] in root.parameter-labels: HorizontalLayout {
-                        if root.parameter-groups[j] == i: Text {
-                            text: label;
-                            color: #d8e0ec;
-                            font-size: 13px;
-                            width: 220px;
-                            vertical-alignment: center;
-                        }
-                        if root.parameter-groups[j] == i: Slider {
-                            value: root.parameter-values[j];
-                            minimum: root.parameter-minimums[j];
-                            maximum: root.parameter-maximums[j];
-                            changed => { root.parameter-changed(j, self.value); }
-                        }
-                        if root.parameter-groups[j] == i: Text {
-                            text: "" + round(root.parameter-values[j] * 1000) / 1000;
-                            color: #f0f5fc;
-                            width: 58px;
-                            horizontal-alignment: right;
-                            vertical-alignment: center;
+                        for label[j] in root.parameter-labels: HorizontalLayout {
+                            height: 26px;
+                            spacing: 12px;
+                            if root.parameter-groups[j] == i: Text { text: label; color: root.text-color; font-size: 11px; width: 185px; vertical-alignment: center; }
+                            if root.parameter-groups[j] == i: ThemeSlider { value: root.parameter-values[j]; minimum: root.parameter-minimums[j]; maximum: root.parameter-maximums[j]; accent: root.accent-color; track-color: root.panel-color; changed(value) => { root.parameter-changed(j, value); } }
+                            if root.parameter-groups[j] == i: Text { text: "" + round(root.parameter-values[j] * 1000) / 1000; color: root.text-color; width: 64px; horizontal-alignment: right; vertical-alignment: center; }
                         }
                     }
                 }
             }
-        }
-
-        HorizontalLayout {
-            spacing: 8px;
-            Button { text: "立即应用"; clicked => { root.apply-now(); } }
-            Button { text: "恢复默认"; clicked => { root.reset-defaults(); } }
-            Button { text: "打开 Shader 目录"; clicked => { root.open-folder(); } }
-            Rectangle { horizontal-stretch: 1; }
-            Text { text: root.status-text; color: #9fddaa; vertical-alignment: center; }
+            HorizontalLayout {
+                spacing: 10px;
+                ThemeButton { text: root.apply-label; accent: root.accent-color; foreground: root.text-color; surface: root.panel-color; clicked => { root.apply-now(); } }
+                ThemeButton { text: root.reset-label; accent: root.accent-color; foreground: root.text-color; surface: root.panel-color; clicked => { root.reset-defaults(); } }
+                ThemeButton { text: root.folder-label; accent: root.accent-color; foreground: root.text-color; surface: root.panel-color; clicked => { root.open-folder(); } }
+                Rectangle { horizontal-stretch: 1; }
+                Text { text: root.status-text; color: root.accent-color; vertical-alignment: center; }
+            }
         }
     }
 }

@@ -145,7 +145,7 @@ Hyprland does not currently expose arbitrary custom uniforms to screen shaders. 
 
 It then temporarily points Hyprland at this per-user copy and recompiles it. The packaged shader under `/usr/share` remains unchanged. Slider values persist in the user copy between panel sessions.
 
-The control panel is a native Rust application built with Slint. It no longer requires Python or Tk at runtime.
+The control panel is a native Rust application built with Slint. It no longer requires Python or Tk at runtime. Chinese, English, Japanese, and Korean can be selected independently from the language menu. On Omarchy, colors are read from the active `~/.local/state/omarchy/current/theme/colors.toml` theme when the panel starts.
 
 To build the application directly from source:
 
@@ -154,6 +154,8 @@ cargo build --release --locked
 ```
 
 The binary is written to `target/release/hyprland-crt-shader`. Installation adds `hypr-crt-control` and a desktop entry, so the panel can be launched from the application menu.
+
+For recovery while tuning, the window displays two shortcuts: `Ctrl+R` restores packaged defaults and `Ctrl+Shift+E` immediately disables the effect.
 
 ## Parameter tuning
 

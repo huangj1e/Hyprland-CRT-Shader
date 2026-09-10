@@ -121,13 +121,13 @@ Hyprland Screen Shader 当前不能直接接收任意用户 uniform，因此面�
 
 面板临时让 Hyprland 使用该文件并重新编译 Shader，不会修改 `/usr/share` 中由 pacman 管理的原始文件。参数会保存在用户副本中，下次打开面板时继续使用。
 
-控制面板已使用 Rust + Slint 原生重构，运行时不再依赖 Python 或 Tk。可以使用以下命令从源码构建：
+控制面板已使用 Rust + Slint 原生重构，运行时不再依赖 Python 或 Tk。界面支持中文、英文、日文和韩文独立切换；在 Omarchy 中启动时会读取当前主题的 `~/.local/state/omarchy/current/theme/colors.toml`，同步使用主题色。可以使用以下命令从源码构建：
 
 ```bash
 cargo build --release --locked
 ```
 
-生成的二进制位于 `target/release/hyprland-crt-shader`。安装后会提供 `hypr-crt-control` 以及桌面应用入口，可以直接从应用程序菜单启动控制面板。
+生成的二进制位于 `target/release/hyprland-crt-shader`。安装后会提供 `hypr-crt-control` 以及桌面应用入口，可以直接从应用程序菜单启动控制面板。为避免调节时画面无法交互，窗口中会显示 `Ctrl+R` 恢复默认参数和 `Ctrl+Shift+E` 紧急关闭特效两个快捷键。
 
 ## 调节参数
 
