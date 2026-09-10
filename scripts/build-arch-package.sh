@@ -19,16 +19,10 @@ command -v makepkg >/dev/null 2>&1 || {
 rm -rf "$build_dir"
 mkdir -p "$build_dir" "$dist_dir"
 cp "$root/packaging/arch/PKGBUILD" "$build_dir/PKGBUILD"
-cp "$root/LICENSE" "$build_dir/LICENSE"
-cp "$root/shaders/crt.frag" "$build_dir/crt.frag"
-cp "$root/Cargo.toml" "$root/Cargo.lock" "$root/build.rs" "$build_dir/"
-cp -r "$root/src" "$root/ui" "$build_dir/"
-# makepkg treats source directories as paths relative to the PKGBUILD.
-ln -s . "$build_dir/src-dir"
-ln -s . "$build_dir/ui-dir"
-cp "$root/config/hyprland-crt-shader.lua" "$build_dir/hyprland-crt-shader.lua"
-cp "$root/config/hyprland-crt-shader.conf" "$build_dir/hyprland-crt-shader.conf"
-cp "$root/packaging/hyprland-crt-control.desktop" "$build_dir/hyprland-crt-control.desktop"
+tar -C "$root" -czf "$build_dir/project.tar.gz" \
+    --transform='s,^,project/,' \
+    Cargo.toml Cargo.lock build.rs LICENSE src ui shaders config \
+    packaging/hyprland-crt-control.desktop
 
 (
     cd "$build_dir"

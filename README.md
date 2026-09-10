@@ -131,7 +131,7 @@ Run it directly from the repository **inside a Hyprland session**:
 ./target/release/hyprland-crt-shader
 ```
 
-The application exits if `HYPRLAND_INSTANCE_SIGNATURE` is absent. When run from the source tree it finds `shaders/crt.frag` through the build-time manifest path.
+The application exits if `HYPRLAND_INSTANCE_SIGNATURE` is absent. When run from the repository root it uses the local `shaders/crt.frag` if no installed system shader exists.
 
 ## Install from source
 

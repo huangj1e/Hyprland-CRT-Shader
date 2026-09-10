@@ -127,7 +127,7 @@ target/release/hyprland-crt-shader
 ./target/release/hyprland-crt-shader
 ```
 
-如果不存在 `HYPRLAND_INSTANCE_SIGNATURE`，程序会退出。从源码目录运行时，程序会通过编译时项目路径找到 `shaders/crt.frag`。
+如果不存在 `HYPRLAND_INSTANCE_SIGNATURE`，程序会退出。从仓库根目录运行时，如果没有找到系统安装的 Shader，程序会使用本地 `shaders/crt.frag`。
 
 ## 从源码直接部署
 

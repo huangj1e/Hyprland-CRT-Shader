@@ -87,7 +87,7 @@ The panel searches for its default/source shader in this order:
 1. `/usr/share/hyprland-crt-shader/crt.frag`
 2. `/usr/local/share/hyprland-crt-shader/crt.frag`
 3. a source-relative location inferred from the executable
-4. `shaders/crt.frag` below the Cargo manifest directory embedded at build time
+4. `shaders/crt.frag` relative to the current working directory
 
 After the first launch, tuning is stored separately at:
 

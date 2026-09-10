@@ -363,7 +363,7 @@ fn source_shader() -> Result<PathBuf, String> {
             })
         })
         .or_else(|| {
-            let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("shaders/crt.frag");
+            let path = PathBuf::from("shaders/crt.frag");
             path.is_file().then_some(path)
         })
         .ok_or_else(|| "找不到 crt.frag / crt.frag was not found".into())

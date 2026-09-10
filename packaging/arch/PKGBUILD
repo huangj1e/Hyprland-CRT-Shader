@@ -9,34 +9,26 @@ license=('MIT')
 depends=('hyprland' 'fontconfig' 'libxkbcommon' 'wayland')
 makedepends=('cargo' 'cmake' 'ninja')
 optdepends=('glslang: validate the GLSL shader locally')
-source=('crt.frag'
-        'Cargo.toml'
-        'Cargo.lock'
-        'build.rs'
-        'src-dir/src/'
-        'ui-dir/ui/'
-        'hyprland-crt-shader.lua'
-        'hyprland-crt-shader.conf'
-        'hyprland-crt-control.desktop'
-        'LICENSE')
-sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+options=('!debug')
+source=('project.tar.gz')
+sha256sums=('SKIP')
 
 build() {
     export CARGO_TARGET_DIR="$srcdir/target"
-    cargo build --release --locked
+    cargo build --release --locked --manifest-path "$srcdir/project/Cargo.toml"
 }
 
 package() {
-    install -Dm644 "$srcdir/crt.frag" \
+    install -Dm644 "$srcdir/project/shaders/crt.frag" \
         "$pkgdir/usr/share/hyprland-crt-shader/crt.frag"
     install -Dm755 "$srcdir/target/release/hyprland-crt-shader" \
         "$pkgdir/usr/bin/hypr-crt-control"
-    install -Dm644 "$srcdir/hyprland-crt-control.desktop" \
+    install -Dm644 "$srcdir/project/packaging/hyprland-crt-control.desktop" \
         "$pkgdir/usr/share/applications/hyprland-crt-control.desktop"
-    install -Dm644 "$srcdir/hyprland-crt-shader.lua" \
+    install -Dm644 "$srcdir/project/config/hyprland-crt-shader.lua" \
         "$pkgdir/usr/share/hyprland-crt-shader/hyprland-crt-shader.lua"
-    install -Dm644 "$srcdir/hyprland-crt-shader.conf" \
+    install -Dm644 "$srcdir/project/config/hyprland-crt-shader.conf" \
         "$pkgdir/usr/share/hyprland-crt-shader/hyprland-crt-shader.conf"
-    install -Dm644 "$srcdir/LICENSE" \
+    install -Dm644 "$srcdir/project/LICENSE" \
         "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }
