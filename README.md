@@ -176,6 +176,27 @@ To remove a direct installation made with the Makefile:
 sudo make uninstall PREFIX=/usr
 ```
 
+## Build with Docker
+
+Docker builds the Arch Linux package in an isolated `linux/amd64` environment and exports the final package files to `dist/` on the host. Docker BuildKit is required for `--output`:
+
+```bash
+make docker-package
+ls dist/
+```
+
+This also works on ARM hosts such as Apple Silicon; Docker will use amd64 emulation. To invoke Docker directly:
+
+```bash
+docker build --platform=linux/amd64 --output type=local,dest=dist .
+```
+
+The exported `dist/` directory contains the `.pkg.tar.zst` package produced by `makepkg`, ready for installation on a compatible Arch Linux system:
+
+```bash
+sudo pacman -U ./dist/hyprland-crt-shader-*.pkg.tar.zst
+```
+
 ## Build an Arch Linux package
 
 Never run `makepkg`, `make package`, or `scripts/build-arch-package.sh` as root.

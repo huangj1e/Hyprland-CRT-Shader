@@ -172,6 +172,33 @@ find ./stage -type f -print
 sudo make uninstall PREFIX=/usr
 ```
 
+## 使用 Docker 构建
+
+Docker 会在隔离的 Arch Linux 环境中构建 pacman 软件包，并将最终构建产物导出到项目根目录的 `dist/`。需要使用支持 `--output` 的 Docker BuildKit：
+
+```bash
+make docker-package
+ls dist/
+```
+
+也可以直接执行 Docker 命令：
+
+```bash
+docker build --platform=linux/amd64 --output type=local,dest=dist .
+```
+
+当前软件包目标平台为 `x86_64`。在 Apple Silicon 等 ARM 主机上构建时，Docker 会通过 amd64 模拟完成构建。构建完成后，产物位于：
+
+```text
+dist/hyprland-crt-shader-1.1.0-1-x86_64.pkg.tar.zst
+```
+
+可以使用以下命令安装：
+
+```bash
+sudo pacman -U ./dist/hyprland-crt-shader-*.pkg.tar.zst
+```
+
 ## 构建 Arch Linux 软件包
 
 不要使用 root 运行 `makepkg`、`make package` 或 `scripts/build-arch-package.sh`。
