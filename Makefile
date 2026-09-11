@@ -6,7 +6,7 @@ SHAREDIR := $(DESTDIR)$(PREFIX)/share/hyprland-crt-shader
 BINDIR := $(DESTDIR)$(PREFIX)/bin
 LICENSEDIR := $(DESTDIR)$(PREFIX)/share/licenses/hyprland-crt-shader
 
-.PHONY: all check install uninstall package clean
+.PHONY: all check install uninstall package docker-package clean
 
 all: check
 
@@ -35,6 +35,9 @@ uninstall:
 
 package:
 	./scripts/build-arch-package.sh
+
+docker-package:
+	docker build --platform=linux/amd64 --output type=local,dest=dist .
 
 clean:
 	rm -rf build dist/*.pkg.tar.*

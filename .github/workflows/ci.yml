@@ -1,11 +1,11 @@
 name: CI
 
+# Run CI only for pushes to the main branch or version tags.
+# Pull requests, feature branches, and non-version tags do not trigger this workflow.
 on:
   push:
-    branches:
-      - main
-    tags:
-      - 'v*'
+    branches: [main]
+    tags: ['v*']
 
 permissions:
   contents: write

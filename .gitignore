@@ -1,4 +1,4 @@
-# Arch/makepkg output
+# Arch/makepkg intermediate output
 *.pkg.tar.*
 *.pkg.tar.*.sig
 *.src.tar.*
@@ -7,8 +7,11 @@ pkg/
 
 # Project build output
 /build/
-/dist/
 /target/
+
+# Exported Docker build artifact
+!/dist/
+!/dist/*.pkg.tar.zst
 
 # Logs and editor files
 *.log
