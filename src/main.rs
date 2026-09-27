@@ -235,6 +235,38 @@ const PARAMETERS: &[Parameter] = &[
         group: 1,
     },
     Parameter {
+        key: "SYNC_SPIKE_COUNT",
+        labels: ["同步撕裂条数量", "Sync tear count", "同期ティア本数", "동기 찢김 개수"],
+        min: 0.0,
+        max: 32.0,
+        step: 1.0,
+        group: 2,
+    },
+    Parameter {
+        key: "SYNC_SPIKE_HEIGHT",
+        labels: ["同步撕裂条高度", "Sync tear height", "同期ティア高さ", "동기 찢김 높이"],
+        min: 0.001,
+        max: 0.05,
+        step: 0.001,
+        group: 2,
+    },
+    Parameter {
+        key: "SYNC_SPIKE_SPEED",
+        labels: ["同步撕裂条速度", "Sync tear speed", "同期ティア速度", "동기 찢김 속도"],
+        min: 0.0,
+        max: 8.0,
+        step: 0.01,
+        group: 2,
+    },
+    Parameter {
+        key: "SYNC_SPIKE_STRENGTH",
+        labels: ["同步撕裂条强度", "Sync tear strength", "同期ティア強度", "동기 찢김 강도"],
+        min: 0.0,
+        max: 3.0,
+        step: 0.01,
+        group: 2,
+    },
+    Parameter {
         key: "ROLLING_TEAR_STRENGTH",
         labels: [
             "滚动撕裂强度",

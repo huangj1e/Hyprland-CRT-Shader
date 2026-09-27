@@ -42,6 +42,10 @@ const float WAVE_GLITCH_PIXELS    = 7.00;  // 强故障时横向波纹额外位�
 const float WAVE_DENSITY_1        = 0.018; // 第一层波纹密度；越大横纹越密。
 const float WAVE_DENSITY_2        = 0.047; // 第二层细波纹密度。
 const float WAVE_SPEED            = 22.0;  // 横向信号波纹的动画速度。
+const float SYNC_SPIKE_COUNT      = 8.0;   // 横向同步细撕裂条数量。
+const float SYNC_SPIKE_HEIGHT     = 0.004; // 每条同步撕裂条高度，占屏幕高度比例。
+const float SYNC_SPIKE_SPEED      = 1.6;   // 同步撕裂条变化速度。
+const float SYNC_SPIKE_STRENGTH   = 1.0;   // 同步撕裂条错位强度。
 
 // ---------- 从上向下滚动的同步撕裂带 ----------
 const float ROLLING_TEAR_STRENGTH = 0.75;  // 滚动撕裂强度；0.0 关闭。
@@ -93,13 +97,14 @@ float smoothPulse(float center, float width, float y) {
 void main() {
     vec2 resolution = max(fullSize, vec2(1.0));
     vec2 pixel = 1.0 / resolution;
+    float effect = clamp(EFFECT_STRENGTH, 0.0, 1.0);
 
     // 每个周期末尾逐渐进入强故障，随后快速归零，接近参考代码的 strength 包络。
     float cycleTime = mod(time, GLITCH_INTERVAL);
     float glitchStart = GLITCH_INTERVAL - min(GLITCH_DURATION, GLITCH_INTERVAL);
     float glitchEnvelope = smoothstep(glitchStart, GLITCH_INTERVAL, cycleTime);
     glitchEnvelope *= glitchEnvelope;
-    float glitch = clamp(BASE_GLITCH + glitchEnvelope * GLITCH_POWER, 0.0, 1.0);
+    float glitch = clamp((BASE_GLITCH + glitchEnvelope * GLITCH_POWER) * effect, 0.0, 1.0);
 
     // 离散随机整屏抖动，比连续 sin 更像同步信号丢失。
     float shakeFrame = floor(time * SHAKE_RATE);
@@ -107,7 +112,7 @@ void main() {
         hash21(vec2(shakeFrame, 13.1)),
         hash21(vec2(shakeFrame, 71.7))
     ) * 2.0 - 1.0;
-    vec2 shake = shakeRandom * (SHAKE_BASE_PIXELS + glitch * SHAKE_GLITCH_PIXELS) * pixel;
+    vec2 shake = shakeRandom * (SHAKE_BASE_PIXELS + glitch * SHAKE_GLITCH_PIXELS) * effect * pixel;
 
     float yPixel = v_texcoord.y * resolution.y;
 
@@ -116,13 +121,17 @@ void main() {
     float wave2 = sin(yPixel * WAVE_DENSITY_2 - time * WAVE_SPEED * 0.47);
     float wave3 = sin(yPixel * 0.006 + floor(time * 8.0) * 2.17);
     float rgbWavePixels = (wave1 * 0.58 + wave2 * 0.27 + wave3 * 0.15)
-                        * (WAVE_BASE_PIXELS + glitch * WAVE_GLITCH_PIXELS);
+                        * (WAVE_BASE_PIXELS + glitch * WAVE_GLITCH_PIXELS) * effect;
 
-    // 两条极细、偶发的水平同步跳线，对应参考代码中的 step(sin(...)) 尖峰。
-    float spikeA = step(0.9975, sin(yPixel * 0.011 + time * 1.6));
-    float spikeB = step(0.9985, sin(yPixel * 0.007 - time * 2.1));
-    rgbWavePixels += spikeA * (3.0 + glitch * 8.0);
-    rgbWavePixels -= spikeB * (4.0 + glitch * 10.0);
+    // 多条极细、偶发的水平同步撕裂条；数量、高度、速度和强度均可调。
+    float spikeCount = max(SYNC_SPIKE_COUNT, 0.0);
+    float spikePhaseA = fract(v_texcoord.y * max(spikeCount, 1.0) + time * SYNC_SPIKE_SPEED);
+    float spikePhaseB = fract(v_texcoord.y * max(spikeCount, 1.0) - time * SYNC_SPIKE_SPEED * 1.31);
+    float spikeWidth = clamp(SYNC_SPIKE_HEIGHT * max(spikeCount, 1.0), 0.0001, 0.49);
+    float spikeA = step(0.5, spikeCount) * (1.0 - smoothstep(spikeWidth * 0.35, spikeWidth, abs(spikePhaseA - 0.5)));
+    float spikeB = step(0.5, spikeCount) * (1.0 - smoothstep(spikeWidth * 0.35, spikeWidth, abs(spikePhaseB - 0.5)));
+    rgbWavePixels += (spikeA * (3.0 + glitch * 8.0) - spikeB * (4.0 + glitch * 10.0))
+                   * SYNC_SPIKE_STRENGTH * effect;
 
     // 从上向下滚动的旧电视垂直同步撕裂带。
     float tearCenter = fract(time * ROLLING_TEAR_SPEED);
@@ -132,24 +141,26 @@ void main() {
                     + 0.25 * sin(yPixel * 0.053 - time * 13.0)
                     + 0.15 * tearGrain;
     float tearShiftPixels = rollingTear * tearShape
-                          * ROLLING_TEAR_STRENGTH * ROLLING_TEAR_PIXELS;
+                          * ROLLING_TEAR_STRENGTH * ROLLING_TEAR_PIXELS * effect;
 
     // CRT 桶形曲面；纵横比修正让不同屏幕方向下曲率相近。
     vec2 p = v_texcoord * 2.0 - 1.0;
     float aspect = resolution.x / resolution.y;
     vec2 radial = p * vec2(min(aspect, 1.0), min(1.0 / aspect, 1.0));
     float r2 = dot(radial, radial);
-    p *= 1.0 + CURVATURE * r2;
+    p *= 1.0 + CURVATURE * effect * r2;
     vec2 uv = p * 0.5 + 0.5;
-    // 横向和纵向独立缩放；大于 1.0 放大，小于 1.0 缩小并露出边缘。
-    uv = (uv - 0.5) / max(vec2(SCREEN_SCALE_X, SCREEN_SCALE_Y), vec2(0.001)) + 0.5;
+    // 横向和纵向独立缩放；总体强度为 0 时回到原始画面尺寸。
+    vec2 screenScale = mix(vec2(1.0), vec2(SCREEN_SCALE_X, SCREEN_SCALE_Y), effect);
+    uv = (uv - 0.5) / max(screenScale, vec2(0.001)) + 0.5;
+    // 多条独立横向撕裂条：条带随时间移动，并用条带编号生成不同的错位方向。
     uv += shake;
     uv.x += (rgbWavePixels + tearShiftPixels) * pixel.x;
 
     // 主画面固定三次采样：R/G/B 各一次。故障越强，色彩分离越明显。
-    float rgbDiffPixels = RGB_SHIFT_BASE_PIXELS
+    float rgbDiffPixels = (RGB_SHIFT_BASE_PIXELS
                         + glitch * RGB_SHIFT_GLITCH
-                        + rollingTear * ROLLING_TEAR_STRENGTH * RGB_SHIFT_TEAR;
+                        + rollingTear * ROLLING_TEAR_STRENGTH * RGB_SHIFT_TEAR) * effect;
     rgbDiffPixels += sin(time * 47.0 + v_texcoord.y * 40.0) * (0.20 + glitch * 1.20);
     vec2 rgbOffset = vec2(rgbDiffPixels * pixel.x, 0.0);
 
@@ -169,7 +180,7 @@ void main() {
     // 再用较粗网格裁切，使噪声形成参考代码那种断续矩形，而不是覆盖整行。
     vec2 coarseCell = floor(vec2(v_texcoord.x * 5.0, v_texcoord.y * 9.0));
     float coarseMask = step(0.52, hash21(coarseCell + vec2(blockFrame * 0.73)));
-    blockMask *= coarseMask * BLOCK_NOISE_STRENGTH;
+    blockMask *= coarseMask * BLOCK_NOISE_STRENGTH * effect;
 
     float blockDirection = hash21(vec2(blockFrame, 8.3)) * 2.0 - 1.0;
     vec2 blockUV = uv + vec2(blockDirection * BLOCK_SHIFT_PIXELS * pixel.x, 0.0);
@@ -179,44 +190,41 @@ void main() {
     // 每帧变化的细白噪点；滚动撕裂区和强故障期间略微增强。
     float whiteNoise = hash21(gl_FragCoord.xy + vec2(floor(time * 60.0) * 17.0,
                                                       floor(time * 60.0) * 29.0)) * 2.0 - 1.0;
-    float noiseAmount = WHITE_NOISE_STRENGTH
+    float noiseAmount = (WHITE_NOISE_STRENGTH
                       + glitch * GLITCH_NOISE_BOOST
-                      + rollingTear * ROLLING_TEAR_STRENGTH * 0.035;
+                      + rollingTear * ROLLING_TEAR_STRENGTH * 0.035) * effect;
     color += whiteNoise * noiseAmount;
 
     // 高频暗纹和传统 CRT 扫描线。
     float waveNoise = 0.5 + 0.5 * sin(yPixel * 1.55 + time * 2.0);
-    color -= waveNoise * HORIZONTAL_LINE * (0.55 + glitch * 0.75);
+    color -= waveNoise * HORIZONTAL_LINE * (0.55 + glitch * 0.75) * effect;
 
     float scan = 0.5 + 0.5 * sin(6.2831853 * (gl_FragCoord.y * 0.50 + time * 0.35));
-    color *= 1.0 - SCANLINE_STRENGTH * scan;
+    color *= 1.0 - SCANLINE_STRENGTH * scan * effect;
 
     // RGB 荧光粉三色子像素结构。
     float phase = mod(floor(gl_FragCoord.x), 3.0);
     vec3 mask = phase < 1.0 ? vec3(1.0, 0.72, 0.72)
               : phase < 2.0 ? vec3(0.72, 1.0, 0.72)
                             : vec3(0.72, 0.72, 1.0);
-    color *= mix(vec3(1.0), mask, RGB_MASK_STRENGTH);
+    color *= mix(vec3(1.0), mask, RGB_MASK_STRENGTH * effect);
 
     // 撕裂带内附加一点亮度跳动，模拟水平同步脉冲不稳定。
-    color *= 1.0 + rollingTear * tearShape * ROLLING_TEAR_STRENGTH * 0.035;
+    color *= 1.0 + rollingTear * tearShape * ROLLING_TEAR_STRENGTH * 0.035 * effect;
 
     // 整体亮度轻微闪烁。
-    color *= 1.0 + FLICKER_STRENGTH
+    color *= 1.0 + FLICKER_STRENGTH * effect
                    * (0.72 * sin(time * 7.3) + 0.28 * sin(time * 13.7));
 
     // CRT 四角暗角。
     vec2 edge = abs(v_texcoord * 2.0 - 1.0);
     float vignette = smoothstep(0.20, 1.25, dot(edge, edge));
-    color *= 1.0 - VIGNETTE_STRENGTH * vignette;
+    color *= 1.0 - VIGNETTE_STRENGTH * vignette * effect;
 
     // 管面之外变黑，边缘宽度按物理像素计算。
     vec2 inside = smoothstep(vec2(0.0), EDGE_SOFTNESS * pixel, uv)
                 * smoothstep(vec2(0.0), EDGE_SOFTNESS * pixel, 1.0 - uv);
     color *= inside.x * inside.y;
 
-    // 总体强度控制：保留原始画面作为基准，便于逐步调节 CRT 效果。
-    vec3 originalColor = texture(tex, v_texcoord).rgb;
-    color = mix(originalColor, color, clamp(EFFECT_STRENGTH, 0.0, 1.0));
     fragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
 }
