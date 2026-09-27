@@ -94,6 +94,20 @@ float smoothPulse(float center, float width, float y) {
     return 1.0 - smoothstep(width * 0.20, width, d);
 }
 
+// 将输入屏幕坐标映射到 CRT 管面。所有会改变采样位置的效果都必须
+// 在桶形变换之前作用于输入坐标，然后重新经过这个函数；否则效果会
+// 只是平面叠加在桶形画面上。
+vec2 barrelUV(vec2 screenUV, vec2 resolution, float effect) {
+    vec2 p = screenUV * 2.0 - 1.0;
+    float aspect = resolution.x / resolution.y;
+    vec2 radial = p * vec2(min(aspect, 1.0), min(1.0 / aspect, 1.0));
+    float r2 = dot(radial, radial);
+    p *= 1.0 + CURVATURE * effect * r2;
+    vec2 uv = p * 0.5 + 0.5;
+    vec2 screenScale = mix(vec2(1.0), vec2(SCREEN_SCALE_X, SCREEN_SCALE_Y), effect);
+    return (uv - 0.5) / max(screenScale, vec2(0.001)) + 0.5;
+}
+
 void main() {
     vec2 resolution = max(fullSize, vec2(1.0));
     vec2 pixel = 1.0 / resolution;
@@ -114,7 +128,11 @@ void main() {
     ) * 2.0 - 1.0;
     vec2 shake = shakeRandom * (SHAKE_BASE_PIXELS + glitch * SHAKE_GLITCH_PIXELS) * effect * pixel;
 
-    float yPixel = v_texcoord.y * resolution.y;
+    // 用桶形后的坐标生成效果的时间、条带和噪声分布。
+    // 注意：最终采样坐标会在下面再次经过 barrelUV，这一点对滚动撕裂带
+    // 尤其重要，否则撕裂位移会成为没有桶形变形的平面横向偏移。
+    vec2 baseUV = barrelUV(v_texcoord, resolution, effect);
+    float yPixel = baseUV.y * resolution.y;
 
     // 多层横向波浪：每一行获得不同 X 位移，模拟坏信号和水平同步漂移。
     float wave1 = sin(yPixel * WAVE_DENSITY_1 + time * WAVE_SPEED);
@@ -125,8 +143,8 @@ void main() {
 
     // 多条极细、偶发的水平同步撕裂条；数量、高度、速度和强度均可调。
     float spikeCount = max(SYNC_SPIKE_COUNT, 0.0);
-    float spikePhaseA = fract(v_texcoord.y * max(spikeCount, 1.0) + time * SYNC_SPIKE_SPEED);
-    float spikePhaseB = fract(v_texcoord.y * max(spikeCount, 1.0) - time * SYNC_SPIKE_SPEED * 1.31);
+    float spikePhaseA = fract(baseUV.y * max(spikeCount, 1.0) + time * SYNC_SPIKE_SPEED);
+    float spikePhaseB = fract(baseUV.y * max(spikeCount, 1.0) - time * SYNC_SPIKE_SPEED * 1.31);
     float spikeWidth = clamp(SYNC_SPIKE_HEIGHT * max(spikeCount, 1.0), 0.0001, 0.49);
     float spikeA = step(0.5, spikeCount) * (1.0 - smoothstep(spikeWidth * 0.35, spikeWidth, abs(spikePhaseA - 0.5)));
     float spikeB = step(0.5, spikeCount) * (1.0 - smoothstep(spikeWidth * 0.35, spikeWidth, abs(spikePhaseB - 0.5)));
@@ -135,7 +153,7 @@ void main() {
 
     // 从上向下滚动的旧电视垂直同步撕裂带。
     float tearCenter = fract(time * ROLLING_TEAR_SPEED);
-    float rollingTear = smoothPulse(tearCenter, ROLLING_TEAR_WIDTH, v_texcoord.y);
+    float rollingTear = smoothPulse(tearCenter, ROLLING_TEAR_WIDTH, baseUV.y);
     float tearGrain = hash21(vec2(floor(yPixel * 0.12), floor(time * 30.0))) * 2.0 - 1.0;
     float tearShape = 0.60 * sin(yPixel * 0.19 + time * 31.0)
                     + 0.25 * sin(yPixel * 0.053 - time * 13.0)
@@ -143,47 +161,40 @@ void main() {
     float tearShiftPixels = rollingTear * tearShape
                           * ROLLING_TEAR_STRENGTH * ROLLING_TEAR_PIXELS * effect;
 
-    // CRT 桶形曲面；纵横比修正让不同屏幕方向下曲率相近。
-    vec2 p = v_texcoord * 2.0 - 1.0;
-    float aspect = resolution.x / resolution.y;
-    vec2 radial = p * vec2(min(aspect, 1.0), min(1.0 / aspect, 1.0));
-    float r2 = dot(radial, radial);
-    p *= 1.0 + CURVATURE * effect * r2;
-    vec2 uv = p * 0.5 + 0.5;
-    // 横向和纵向独立缩放；总体强度为 0 时回到原始画面尺寸。
-    vec2 screenScale = mix(vec2(1.0), vec2(SCREEN_SCALE_X, SCREEN_SCALE_Y), effect);
-    uv = (uv - 0.5) / max(screenScale, vec2(0.001)) + 0.5;
-    // 多条独立横向撕裂条：条带随时间移动，并用条带编号生成不同的错位方向。
-    uv += shake;
-    uv.x += (rgbWavePixels + tearShiftPixels) * pixel.x;
+    // 所有采样位移（包括滚动撕裂带）先作用于原始屏幕坐标，
+    // 再重新经过桶形映射。这样撕裂带的上下边界和内部位移都会弯曲。
+    vec2 effectInput = v_texcoord + shake;
+    effectInput.x += (rgbWavePixels + tearShiftPixels) * pixel.x;
+    vec2 uv = barrelUV(effectInput, resolution, effect);
 
     // 主画面固定三次采样：R/G/B 各一次。故障越强，色彩分离越明显。
     float rgbDiffPixels = (RGB_SHIFT_BASE_PIXELS
                         + glitch * RGB_SHIFT_GLITCH
                         + rollingTear * ROLLING_TEAR_STRENGTH * RGB_SHIFT_TEAR) * effect;
-    rgbDiffPixels += sin(time * 47.0 + v_texcoord.y * 40.0) * (0.20 + glitch * 1.20);
+    rgbDiffPixels += sin(time * 47.0 + uv.y * 40.0) * (0.20 + glitch * 1.20);
     vec2 rgbOffset = vec2(rgbDiffPixels * pixel.x, 0.0);
+    vec3 rgbUVOffset = barrelUV(effectInput + vec2(rgbOffset.x, 0.0), resolution, effect) - uv;
 
     vec3 color;
-    color.r = texture(tex, uv + rgbOffset).r;
+    color.r = texture(tex, uv + rgbUVOffset).r;
     color.g = texture(tex, uv).g;
-    color.b = texture(tex, uv - rgbOffset).b;
+    color.b = texture(tex, uv - rgbUVOffset).b;
 
     // 块状信号噪声：按低分辨率网格随机选区；仅命中时混入一份错位画面。
     // 这里额外 1 次 texture lookup，总采样数为 4，比参考实现的 9 次更适合桌面常驻。
     float blockFrame = floor(time * BLOCK_RATE);
-    vec2 blockCell = floor(vec2(v_texcoord.x * 14.0, v_texcoord.y * 32.0));
+    vec2 blockCell = floor(vec2(uv.x * 14.0, uv.y * 32.0));
     float blockRand = hash21(blockCell + vec2(blockFrame * 1.37, blockFrame * 2.11));
     float blockThreshold = BLOCK_NOISE_AMOUNT + glitch * BLOCK_GLITCH_AMOUNT;
     float blockMask = 1.0 - step(blockThreshold, blockRand);
 
     // 再用较粗网格裁切，使噪声形成参考代码那种断续矩形，而不是覆盖整行。
-    vec2 coarseCell = floor(vec2(v_texcoord.x * 5.0, v_texcoord.y * 9.0));
+    vec2 coarseCell = floor(vec2(uv.x * 5.0, uv.y * 9.0));
     float coarseMask = step(0.52, hash21(coarseCell + vec2(blockFrame * 0.73)));
     blockMask *= coarseMask * BLOCK_NOISE_STRENGTH * effect;
 
     float blockDirection = hash21(vec2(blockFrame, 8.3)) * 2.0 - 1.0;
-    vec2 blockUV = uv + vec2(blockDirection * BLOCK_SHIFT_PIXELS * pixel.x, 0.0);
+    vec2 blockUV = barrelUV(effectInput + vec2(blockDirection * BLOCK_SHIFT_PIXELS * pixel.x, 0.0), resolution, effect);
     vec3 blockColor = texture(tex, blockUV).rgb;
     color = mix(color, blockColor + vec3(0.025, 0.010, 0.035), blockMask);
 
@@ -199,11 +210,12 @@ void main() {
     float waveNoise = 0.5 + 0.5 * sin(yPixel * 1.55 + time * 2.0);
     color -= waveNoise * HORIZONTAL_LINE * (0.55 + glitch * 0.75) * effect;
 
-    float scan = 0.5 + 0.5 * sin(6.2831853 * (gl_FragCoord.y * 0.50 + time * 0.35));
+    // 扫描线也读取桶形后的 Y 坐标，避免仍然保持笔直的屏幕横线。
+    float scan = 0.5 + 0.5 * sin(6.2831853 * (yPixel * 0.50 + time * 0.35));
     color *= 1.0 - SCANLINE_STRENGTH * scan * effect;
 
     // RGB 荧光粉三色子像素结构。
-    float phase = mod(floor(gl_FragCoord.x), 3.0);
+    float phase = mod(floor(uv.x * resolution.x), 3.0);
     vec3 mask = phase < 1.0 ? vec3(1.0, 0.72, 0.72)
               : phase < 2.0 ? vec3(0.72, 1.0, 0.72)
                             : vec3(0.72, 0.72, 1.0);
@@ -217,7 +229,7 @@ void main() {
                    * (0.72 * sin(time * 7.3) + 0.28 * sin(time * 13.7));
 
     // CRT 四角暗角。
-    vec2 edge = abs(v_texcoord * 2.0 - 1.0);
+    vec2 edge = abs(uv * 2.0 - 1.0);
     float vignette = smoothstep(0.20, 1.25, dot(edge, edge));
     color *= 1.0 - VIGNETTE_STRENGTH * vignette * effect;
 
