@@ -10,8 +10,8 @@ pkg/
 /target/
 
 # Exported Docker build artifact
-!/dist/
-!/dist/*.pkg.tar.zst
+/dist/
+/dist/*.pkg.tar.zst
 
 # Logs and editor files
 *.log
