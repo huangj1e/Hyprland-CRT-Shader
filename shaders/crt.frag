@@ -21,6 +21,10 @@ uniform vec2 fullSize;
 // 默认值仍比参考网页克制一些，避免终端和编辑器文字完全无法阅读。
 // ============================================================================
 
+// ---------- 总体特效强度 ----------
+// 0.0 为原始画面，1.0 为完整 CRT 效果。
+const float EFFECT_STRENGTH      = 1.0;
+
 // ---------- 周期性故障包络 ----------
 const float GLITCH_INTERVAL       = 95.0;   // 故障周期（秒）；越小故障越频繁。
 const float GLITCH_DURATION       = 0.65;  // 每个周期末尾的增强时长（秒）。
@@ -211,5 +215,8 @@ void main() {
                 * smoothstep(vec2(0.0), EDGE_SOFTNESS * pixel, 1.0 - uv);
     color *= inside.x * inside.y;
 
+    // 总体强度控制：保留原始画面作为基准，便于逐步调节 CRT 效果。
+    vec3 originalColor = texture(tex, v_texcoord).rgb;
+    color = mix(originalColor, color, clamp(EFFECT_STRENGTH, 0.0, 1.0));
     fragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
 }

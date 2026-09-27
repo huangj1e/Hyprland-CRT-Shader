@@ -145,6 +145,12 @@ export component AppWindow inherits Window {
                 Rectangle { horizontal-stretch: 1; }
             }
             Text { text: root.description-text; color: root.muted-color; font-size: 12px; }
+            HorizontalLayout {
+                spacing: 12px;
+                Text { text: root.parameter-labels[0]; color: root.text-color; font-size: 11px; width: 185px; vertical-alignment: center; }
+                ThemeSlider { value: root.parameter-values[0]; minimum: root.parameter-minimums[0]; maximum: root.parameter-maximums[0]; accent: root.accent-color; track-color: root.panel-color; changed(value) => { root.parameter-changed(0, value); } }
+                Text { text: "" + round(root.parameter-values[0] * 1000) / 1000; color: root.text-color; width: 64px; horizontal-alignment: right; vertical-alignment: center; }
+            }
             Text { text: root.shortcut-label; color: root.accent-color; font-size: 11px; }
             ScrollView {
                 vertical-stretch: 1;

@@ -138,6 +138,14 @@ const STATUS_TEXT: [[&str; 4]; 10] = [
 
 const PARAMETERS: &[Parameter] = &[
     Parameter {
+        key: "EFFECT_STRENGTH",
+        labels: ["总体特效强度", "Overall effect strength", "全体エフェクト強度", "전체 효과 강도"],
+        min: 0.0,
+        max: 1.0,
+        step: 0.01,
+        group: -1,
+    },
+    Parameter {
         key: "GLITCH_INTERVAL",
         labels: ["故障周期", "Glitch interval", "グリッチ間隔", "글리치 간격"],
         min: 1.0,
@@ -799,7 +807,7 @@ fn run() -> Result<(), String> {
                 PARAMETERS
                     .iter()
                     .position(|p| p.group == group as i32)
-                    .unwrap_or(0) as i32
+                    .unwrap_or(1) as i32
             })
             .collect::<Vec<_>>(),
     )));
