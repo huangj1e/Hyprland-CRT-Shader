@@ -119,6 +119,9 @@ void main() {
     float glitchEnvelope = smoothstep(glitchStart, GLITCH_INTERVAL, cycleTime);
     glitchEnvelope *= glitchEnvelope;
     float glitch = clamp((BASE_GLITCH + glitchEnvelope * GLITCH_POWER) * effect, 0.0, 1.0);
+    // 仅把周期性故障包络用于“故障抖动”。BASE_GLITCH 是常态信号不稳，
+    // 不应在 SHAKE_BASE_PIXELS = 0 时偷偷重新启用整屏抖动。
+    float faultGlitch = clamp(glitchEnvelope * GLITCH_POWER * effect, 0.0, 1.0);
 
     // 离散随机整屏抖动，比连续 sin 更像同步信号丢失。
     float shakeFrame = floor(time * SHAKE_RATE);
@@ -126,7 +129,8 @@ void main() {
         hash21(vec2(shakeFrame, 13.1)),
         hash21(vec2(shakeFrame, 71.7))
     ) * 2.0 - 1.0;
-    vec2 shake = shakeRandom * (SHAKE_BASE_PIXELS + glitch * SHAKE_GLITCH_PIXELS) * effect * pixel;
+    vec2 shake = shakeRandom * (SHAKE_BASE_PIXELS * effect
+                              + faultGlitch * SHAKE_GLITCH_PIXELS) * pixel;
 
     // 用桶形后的坐标生成效果的时间、条带和噪声分布。
     // 注意：最终采样坐标会在下面再次经过 barrelUV，这一点对滚动撕裂带
@@ -173,7 +177,7 @@ void main() {
                         + rollingTear * ROLLING_TEAR_STRENGTH * RGB_SHIFT_TEAR) * effect;
     rgbDiffPixels += sin(time * 47.0 + uv.y * 40.0) * (0.20 + glitch * 1.20);
     vec2 rgbOffset = vec2(rgbDiffPixels * pixel.x, 0.0);
-    vec3 rgbUVOffset = barrelUV(effectInput + vec2(rgbOffset.x, 0.0), resolution, effect) - uv;
+    vec2 rgbUVOffset = barrelUV(effectInput + vec2(rgbOffset.x, 0.0), resolution, effect) - uv;
 
     vec3 color;
     color.r = texture(tex, uv + rgbUVOffset).r;

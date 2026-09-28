@@ -486,9 +486,16 @@ fn ensure_user_shader(source: &Path, user: &Path) -> Result<(), String> {
     }
 
     let old_text = fs::read_to_string(user).map_err(|e| e.to_string())?;
-    if PARAMETERS
-        .iter()
-        .all(|parameter| find_value(&old_text, parameter.key).is_ok())
+    // The user copy may contain all known parameters while still using an
+    // older implementation. In particular, older copies coupled BASE_GLITCH
+    // to the idle shake, so reinstalling the package alone must not leave that
+    // stale shader active.
+    let has_current_shake_logic = old_text.contains("float faultGlitch")
+        && old_text.contains("SHAKE_BASE_PIXELS * effect");
+    if has_current_shake_logic
+        && PARAMETERS
+            .iter()
+            .all(|parameter| find_value(&old_text, parameter.key).is_ok())
     {
         return Ok(());
     }
