@@ -1,6 +1,6 @@
 # Maintainer: Hyprland CRT Shader contributors
 pkgname=hyprland-crt-shader
-pkgver=1.2.4
+pkgver=1.5.0
 pkgrel=1
 pkgdesc='Rust and Slint control panel for the Hyprland CRT screen shader'
 arch=('x86_64')

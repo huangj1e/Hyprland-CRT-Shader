@@ -2,15 +2,18 @@
 
 All notable changes to this project will be documented in this file. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases use [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.5.0] - 2026-09-28
+
+### Fixed
+
+- Respect zero-valued shake, wave, sync-tear, and RGB-shift controls without injecting hidden horizontal motion.
+- Upgrade stale per-user shader copies when the installed shader implementation changes.
+- Fix GLSL vector type mismatch that prevented the shader from compiling.
+- Persist control-panel shader values and enabled state across Hyprland reloads, restarts, and login by generating a user configuration include.
 
 ### Added
 
 - Independent horizontal and vertical image-scale controls, including automatic migration from the former single overscan value.
-
-### Fixed
-
-- Persist control-panel shader values and enabled state across Hyprland reloads, restarts, and login by generating a user configuration include.
 
 ## [1.1.0] - 2026-09-10
 
@@ -45,6 +48,6 @@ All notable changes to this project will be documented in this file. The format 
 - Native Rust + Slint graphical control panel with application-menu integration.
 - Arch Linux `PKGBUILD` and pacman package workflow.
 
-[Unreleased]: https://github.com/huangj1e/Hyprland-CRT-Shader/compare/v1.1.0...HEAD
+[1.5.0]: https://github.com/huangj1e/Hyprland-CRT-Shader/compare/v1.1.0...v1.5.0
 [1.1.0]: https://github.com/huangj1e/Hyprland-CRT-Shader/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/huangj1e/Hyprland-CRT-Shader/releases/tag/v1.0.0

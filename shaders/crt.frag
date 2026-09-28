@@ -175,7 +175,12 @@ void main() {
     float rgbDiffPixels = (RGB_SHIFT_BASE_PIXELS
                         + glitch * RGB_SHIFT_GLITCH
                         + rollingTear * ROLLING_TEAR_STRENGTH * RGB_SHIFT_TEAR) * effect;
-    rgbDiffPixels += sin(time * 47.0 + uv.y * 40.0) * (0.20 + glitch * 1.20);
+    // 不额外注入未配置的 RGB 横向位移；否则即使 RGB 分离设为 0，
+    // 这个独立的动画项仍会产生约 0.2 像素的左右抖动。
+    float rgbShiftAnimation = sin(time * 47.0 + uv.y * 40.0)
+                             * (0.20 * RGB_SHIFT_BASE_PIXELS
+                                + glitch * RGB_SHIFT_GLITCH);
+    rgbDiffPixels += rgbShiftAnimation * effect;
     vec2 rgbOffset = vec2(rgbDiffPixels * pixel.x, 0.0);
     vec2 rgbUVOffset = barrelUV(effectInput + vec2(rgbOffset.x, 0.0), resolution, effect) - uv;
 
